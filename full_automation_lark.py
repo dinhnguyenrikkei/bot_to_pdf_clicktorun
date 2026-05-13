@@ -361,29 +361,6 @@ def run_automation():
     print("\n📄 Bắt đầu chuyển đổi hàng loạt sang PDF (Mất vài phút)...")
     convert(str(temp_dir))
     
-    print("\n☁️ Bắt đầu Upload lên Lark Bitable...")
-    success_count = 0
-    total = len(docx_list)
-    
-    for idx, item in enumerate(docx_list, 1):
-        pdf_path = temp_dir / f"{item['file_name_base']}.pdf"
-        print(f"[{idx}/{total}] Đang tải lên {pdf_path.name} ...", end="", flush=True)
-        
-        if not pdf_path.exists():
-            print(" LỖI: Không tìm thấy file PDF!")
-            continue
-            
-        with open(pdf_path, 'rb') as f:
-            file_bytes = f.read()
-            
-        token_file = upload_file_to_lark(token, pdf_path.name, file_bytes)
-        if token_file:
-            if update_bitable_record(token, item['record_id'], token_file):
-                print(" Thành công! ✓")
-                success_count += 1
-            else:
-                print(" LỖI Cập nhật!")
-                
     print("\n📦 Đang nén các file PDF vào file ZIP theo ngành...")
     zip_cntt = zipfile.ZipFile("PDF_TrungTuyen_CNTT.zip", 'w', zipfile.ZIP_DEFLATED)
     zip_qtkd = zipfile.ZipFile("PDF_TrungTuyen_QTKD.zip", 'w', zipfile.ZIP_DEFLATED)
@@ -400,6 +377,33 @@ def run_automation():
     zip_cntt.close()
     zip_qtkd.close()
     print("-> Đã tạo 2 file ZIP thành công (CNTT và QTKD) để bạn dự phòng!")
+
+    print("\n☁️ Bắt đầu Upload lên Lark Bitable...")
+    success_count = 0
+    total = len(docx_list)
+    
+    for idx, item in enumerate(docx_list, 1):
+        pdf_path = temp_dir / f"{item['file_name_base']}.pdf"
+        print(f"[{idx}/{total}] Đang tải lên {pdf_path.name} ...", end="", flush=True)
+        
+        if not pdf_path.exists():
+            print(" LỖI: Không tìm thấy file PDF!")
+            continue
+            
+        with open(pdf_path, 'rb') as f:
+            file_bytes = f.read()
+            
+        try:
+            token_file = upload_file_to_lark(token, pdf_path.name, file_bytes)
+            if token_file:
+                if update_bitable_record(token, item['record_id'], token_file):
+                    print(" Thành công! ✓")
+                    success_count += 1
+                else:
+                    print(" LỖI Cập nhật!")
+        except Exception as e:
+            print(f" LỖI Kết nối: {e}")
+            continue
                 
     print(f"\n🧹 Đang dọn dẹp thư mục tạm...")
     shutil.rmtree(temp_dir, ignore_errors=True)
