@@ -1,0 +1,22 @@
+# Tệp dữ liệu Excel (Bao gồm dữ liệu thật chứa thông tin cá nhân)
+*.xlsx
+*.csv
+
+# Tệp nén PDF đầu ra
+*.zip
+
+# Thư mục tạm thời sinh ra trong quá trình chạy
+_temp_all_in_one/
+_temp_split/
+__pycache__/
+
+# Tệp PDF
+*.pdf
+
+# Tệp Word (Sẽ bỏ qua tất cả file Word TRỪ 2 file template chuẩn)
+*.docx
+!Mau_mail_CNTT.docx
+!Mau_mail_QTKDS.docx
+
+# Tệp hệ thống
+.DS_Store
