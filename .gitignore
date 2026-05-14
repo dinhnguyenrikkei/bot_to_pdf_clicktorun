@@ -20,3 +20,6 @@ __pycache__/
 
 # Tệp hệ thống
 .DS_Store
+
+# File c?u h�nh ch?a API Keys
+config.json

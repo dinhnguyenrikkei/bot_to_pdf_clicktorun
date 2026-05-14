@@ -15,13 +15,24 @@ from docx2pdf import convert
 # Đảm bảo in tiếng Việt không lỗi trên terminal
 sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
 
+import json
+
 # ==========================================
 # 1. CẤU HÌNH API LARK
 # ==========================================
-APP_ID = 'cli_aa8847bf0f79deef'
-APP_SECRET = 'zBA9rmZ7ScgEtIS1OFFOedGIHaz11V8g'
-APP_TOKEN = 'UWhibaHkCaWLausconRl8krsgZg'
-TABLE_ID = 'tblq2BRmDwbXOvXI'
+try:
+    with open('config.json', 'r', encoding='utf-8') as f:
+        _config = json.load(f)
+        APP_ID = _config.get('APP_ID')
+        APP_SECRET = _config.get('APP_SECRET')
+        APP_TOKEN = _config.get('APP_TOKEN')
+        TABLE_ID = _config.get('TABLE_ID')
+except FileNotFoundError:
+    print("LỖI: Không tìm thấy file config.json. Hãy tạo file config.json chứa các API keys.")
+    sys.exit(1)
+except Exception as e:
+    print(f"LỖI đọc file config.json: {e}")
+    sys.exit(1)
 
 FILE_FIELD_NAME = 'File học viên'
 SKIP_EXISTING = True  # Đổi thành True để bỏ qua những người đã có file, chỉ update người mới
