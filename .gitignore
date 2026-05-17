@@ -23,3 +23,8 @@ __pycache__/
 
 # File c?u hình ch?a API Keys
 config.json
+
+config.json
+*.xlsx
+*.zip
+_temp_*/

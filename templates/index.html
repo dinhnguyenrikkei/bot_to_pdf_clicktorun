@@ -1,0 +1,468 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Rikkei Bot — Lark Automation Dashboard</title>
+<meta name="description" content="Dashboard quản lý Bot tự động hóa trộn thư và upload PDF lên Lark Bitable">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0a0e1a;--surface:#111827;--surface2:#1a2236;--surface3:#1f2a40;
+  --border:#2a3550;--border-glow:#3b82f620;
+  --text:#e2e8f0;--text-dim:#8896b3;--text-muted:#5a6a87;
+  --accent:#3b82f6;--accent-glow:#3b82f680;--accent-light:#60a5fa;
+  --green:#10b981;--green-dim:#065f46;--green-glow:#10b98140;
+  --amber:#f59e0b;--amber-dim:#78350f;--amber-glow:#f59e0b40;
+  --red:#ef4444;--red-dim:#7f1d1d;--red-glow:#ef444440;
+  --cyan:#06b6d4;--purple:#8b5cf6;
+  --radius:12px;--radius-sm:8px;--radius-xs:6px;
+  --font:'Be Vietnam Pro',system-ui,sans-serif;
+  --mono:'JetBrains Mono',monospace;
+  --shadow:0 4px 24px #00000040,0 1px 3px #00000020;
+  --shadow-lg:0 8px 40px #00000060;
+}
+html{font-size:15px;scroll-behavior:smooth}
+body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden}
+body::before{content:'';position:fixed;top:0;left:0;right:0;bottom:0;background:radial-gradient(ellipse 80% 60% at 50% -20%,#3b82f608 0%,transparent 70%),radial-gradient(ellipse 60% 40% at 80% 100%,#8b5cf606 0%,transparent 70%);pointer-events:none;z-index:0}
+
+/* Layout */
+.app{position:relative;z-index:1;max-width:1200px;margin:0 auto;padding:2rem 1.5rem 4rem}
+
+/* Header */
+.header{display:flex;align-items:center;justify-content:space-between;margin-bottom:2.5rem;padding-bottom:1.5rem;border-bottom:1px solid var(--border)}
+.logo{display:flex;align-items:center;gap:.75rem}
+.logo-icon{width:44px;height:44px;background:linear-gradient(135deg,var(--accent),var(--purple));border-radius:var(--radius-sm);display:grid;place-items:center;font-size:1.4rem;box-shadow:0 0 20px var(--accent-glow)}
+.logo h1{font-size:1.5rem;font-weight:700;letter-spacing:-.02em;background:linear-gradient(135deg,#fff,var(--accent-light));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.logo p{font-size:.75rem;color:var(--text-muted);font-weight:400;letter-spacing:.04em;text-transform:uppercase;margin-top:2px}
+.header-actions{display:flex;gap:.5rem}
+.btn{display:inline-flex;align-items:center;gap:.5rem;padding:.6rem 1.2rem;border-radius:var(--radius-xs);font-family:var(--font);font-size:.82rem;font-weight:500;border:1px solid var(--border);background:var(--surface2);color:var(--text);cursor:pointer;transition:all .2s;text-decoration:none}
+.btn:hover{border-color:var(--accent);background:var(--surface3);box-shadow:0 0 12px var(--border-glow)}
+.btn-primary{background:var(--accent);border-color:var(--accent);color:#fff}
+.btn-primary:hover{background:var(--accent-light);box-shadow:0 0 20px var(--accent-glow)}
+
+/* Stats Grid */
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:1rem;margin-bottom:2rem}
+.stat-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:1.25rem 1.5rem;position:relative;overflow:hidden;transition:all .3s}
+.stat-card:hover{border-color:var(--accent);transform:translateY(-2px);box-shadow:var(--shadow)}
+.stat-card::after{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,var(--accent),transparent);opacity:0;transition:opacity .3s}
+.stat-card:hover::after{opacity:1}
+.stat-label{font-size:.72rem;text-transform:uppercase;letter-spacing:.06em;color:var(--text-muted);font-weight:500;margin-bottom:.5rem}
+.stat-value{font-size:2rem;font-weight:800;letter-spacing:-.03em;line-height:1}
+.stat-value.green{color:var(--green)}.stat-value.amber{color:var(--amber)}.stat-value.cyan{color:var(--cyan)}.stat-value.purple{color:var(--purple)}
+.stat-sub{font-size:.72rem;color:var(--text-dim);margin-top:.4rem;display:flex;align-items:center;gap:.3rem}
+.stat-dot{width:6px;height:6px;border-radius:50%;display:inline-block}
+.stat-dot.live{background:var(--green);box-shadow:0 0 8px var(--green-glow);animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+
+/* Section */
+.section{margin-bottom:2rem}
+.section-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem}
+.section-title{font-size:1rem;font-weight:600;display:flex;align-items:center;gap:.5rem}
+.badge{font-size:.65rem;padding:.2rem .5rem;border-radius:99px;font-weight:600;text-transform:uppercase;letter-spacing:.04em}
+.badge-green{background:var(--green-dim);color:var(--green)}.badge-amber{background:var(--amber-dim);color:var(--amber)}.badge-red{background:var(--red-dim);color:var(--red)}
+
+/* API Config */
+.api-config{display:grid;grid-template-columns:repeat(3,1fr);gap:1rem;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:1.25rem 1.5rem;margin-bottom:2rem}
+.input-group{display:flex;flex-direction:column;gap:.5rem}
+.input-group label{font-size:.72rem;color:var(--text-muted);font-weight:600;text-transform:uppercase;letter-spacing:.05em}
+.input-group input{background:var(--bg);border:1px solid var(--border);color:var(--text);font-family:var(--mono);padding:.6rem 1rem;border-radius:var(--radius-xs);font-size:.82rem;outline:none;transition:all .2s}
+.input-group input:focus{border-color:var(--accent);box-shadow:0 0 8px var(--accent-glow)}
+
+/* Pipeline Flow */
+.pipeline{display:grid;grid-template-columns:repeat(5,1fr);gap:.5rem;margin-bottom:2rem}
+.pipe-step{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);padding:1rem;text-align:center;position:relative;transition:all .3s}
+.pipe-step.active{border-color:var(--accent);box-shadow:0 0 16px var(--border-glow)}
+.pipe-step.done{border-color:var(--green)}
+.pipe-step .icon{font-size:1.5rem;margin-bottom:.4rem}
+.pipe-step .name{font-size:.72rem;font-weight:600;text-transform:uppercase;letter-spacing:.04em;color:var(--text-dim)}
+.pipe-step .status{font-size:.65rem;margin-top:.3rem;font-weight:500}
+.pipe-step .status.ok{color:var(--green)}.pipe-step .status.wait{color:var(--text-muted)}.pipe-step .status.run{color:var(--amber)}
+.pipe-arrow{position:absolute;right:-14px;top:50%;transform:translateY(-50%);color:var(--text-muted);font-size:.7rem;z-index:2}
+
+/* Table */
+.table-wrap{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden}
+.table-toolbar{display:flex;align-items:center;justify-content:space-between;padding:.75rem 1.25rem;border-bottom:1px solid var(--border);background:var(--surface2)}
+.search-box{display:flex;align-items:center;gap:.5rem;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-xs);padding:.4rem .75rem;min-width:260px}
+.search-box input{background:none;border:none;color:var(--text);font-family:var(--font);font-size:.82rem;outline:none;width:100%}
+.search-box input::placeholder{color:var(--text-muted)}
+table{width:100%;border-collapse:collapse}
+thead{background:var(--surface2)}
+th{text-align:left;padding:.7rem 1rem;font-size:.7rem;text-transform:uppercase;letter-spacing:.05em;color:var(--text-muted);font-weight:600;border-bottom:1px solid var(--border)}
+td{padding:.65rem 1rem;font-size:.82rem;border-bottom:1px solid #1e2a3f;vertical-align:middle}
+tr:hover td{background:var(--surface2)}
+.td-name{font-weight:500;color:#fff}
+.td-mono{font-family:var(--mono);font-size:.75rem;color:var(--text-dim)}
+.chip{display:inline-flex;align-items:center;gap:.3rem;padding:.15rem .55rem;border-radius:99px;font-size:.68rem;font-weight:600}
+.chip-cntt{background:#1e3a5f;color:var(--accent-light)}
+.chip-qtkd{background:#3b1f4e;color:#c084fc}
+.chip-ok{background:var(--green-dim);color:var(--green)}
+.chip-pending{background:var(--amber-dim);color:var(--amber)}
+.chip-err{background:var(--red-dim);color:var(--red)}
+
+/* Log Panel */
+.log-panel{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden}
+.log-content{padding:1rem 1.25rem;max-height:200px;overflow-y:auto;font-family:var(--mono);font-size:.75rem;line-height:1.7;color:var(--text-dim)}
+.log-content .log-time{color:var(--text-muted);margin-right:.5rem}
+.log-content .log-ok{color:var(--green)}.log-content .log-warn{color:var(--amber)}.log-content .log-err{color:var(--red)}.log-content .log-info{color:var(--cyan)}
+
+/* Footer */
+.footer{text-align:center;padding-top:2rem;border-top:1px solid var(--border);margin-top:3rem;color:var(--text-muted);font-size:.72rem}
+.footer a{color:var(--accent-light);text-decoration:none}
+.footer a:hover{text-decoration:underline}
+
+/* Responsive */
+@media(max-width:900px){.stats{grid-template-columns:repeat(2,1fr)}.pipeline{grid-template-columns:repeat(3,1fr)}.api-config{grid-template-columns:1fr}}
+@media(max-width:600px){.stats{grid-template-columns:1fr}.pipeline{grid-template-columns:1fr}.header{flex-direction:column;gap:1rem;text-align:center}.header-actions{justify-content:center;flex-wrap:wrap}}
+
+/* Animations */
+@keyframes fadeUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+.stat-card,.pipe-step,.table-wrap,.log-panel{animation:fadeUp .5s ease both}
+.stat-card:nth-child(2){animation-delay:.05s}.stat-card:nth-child(3){animation-delay:.1s}.stat-card:nth-child(4){animation-delay:.15s}
+.pipe-step:nth-child(2){animation-delay:.08s}.pipe-step:nth-child(3){animation-delay:.12s}.pipe-step:nth-child(4){animation-delay:.16s}.pipe-step:nth-child(5){animation-delay:.2s}
+
+/* Scrollbar */
+::-webkit-scrollbar{width:5px}::-webkit-scrollbar-track{background:var(--surface)}::-webkit-scrollbar-thumb{background:var(--border);border-radius:99px}::-webkit-scrollbar-thumb:hover{background:var(--text-muted)}
+</style>
+</head>
+<body>
+<div class="app">
+  <!-- Header -->
+  <header class="header">
+    <div class="logo">
+      <div class="logo-icon">🤖</div>
+      <div>
+        <h1>Rikkei Bot</h1>
+        <p>Lark Bitable Automation</p>
+      </div>
+    </div>
+    <div class="header-actions">
+      <a href="https://open.larksuite.com/app?lang=en-US" target="_blank" class="btn">📖 Lark Apps</a>
+      <button class="btn btn-primary" style="background:var(--red);border-color:var(--red)" id="btnRunOverwrite" onclick="runOverwrite()">▶ Tạo mới / Ghi đè</button>
+      <button class="btn btn-primary" id="btnRunUpdate" onclick="runUpdate()">▶ Update bảng</button>
+    </div>
+  </header>
+
+  <!-- API Config -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-title">⚙️ Cấu Hình Kết Nối API</div>
+    </div>
+    <div class="api-config">
+      <div class="input-group">
+        <label>App ID / API ID</label>
+        <input type="text" id="apiId" placeholder="Nhập App ID..." />
+      </div>
+      <div class="input-group">
+        <label>App Secret / API Secret</label>
+        <input type="password" id="apiSecret" placeholder="Nhập App Secret..." />
+      </div>
+      <div class="input-group">
+        <label>Link CRM</label>
+        <input type="text" id="crmLink" placeholder="https://..." />
+      </div>
+    </div>
+  </div>
+
+  <!-- Stats -->
+  <div class="stats">
+    <div class="stat-card">
+      <div class="stat-label">Tổng học viên</div>
+      <div class="stat-value cyan" id="statTotal">247</div>
+      <div class="stat-sub"><span class="stat-dot live"></span> Đồng bộ Lark</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Đã xử lý</div>
+      <div class="stat-value green" id="statDone">189</div>
+      <div class="stat-sub">✓ Upload thành công</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Chờ xử lý</div>
+      <div class="stat-value amber" id="statPending">53</div>
+      <div class="stat-sub">Chưa có PDF</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Lỗi</div>
+      <div class="stat-value purple" id="statErr">5</div>
+      <div class="stat-sub">Cần kiểm tra</div>
+    </div>
+  </div>
+
+  <!-- Pipeline -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-title">⚡ Pipeline Tự Động</div>
+      <span class="badge badge-green">SẴN SÀNG</span>
+    </div>
+    <div class="pipeline">
+      <div class="pipe-step done"><div class="icon">🔑</div><div class="name">Auth Token</div><div class="status ok">✓ Kết nối</div><span class="pipe-arrow">→</span></div>
+      <div class="pipe-step done"><div class="icon">📥</div><div class="name">Fetch & Clean</div><div class="status ok">✓ 247 bản ghi</div><span class="pipe-arrow">→</span></div>
+      <div class="pipe-step active"><div class="icon">📝</div><div class="name">Mail Merge</div><div class="status wait">Chờ lệnh</div><span class="pipe-arrow">→</span></div>
+      <div class="pipe-step"><div class="icon">📄</div><div class="name">DOCX → PDF</div><div class="status wait">—</div><span class="pipe-arrow">→</span></div>
+      <div class="pipe-step"><div class="icon">☁️</div><div class="name">Upload Lark</div><div class="status wait">—</div></div>
+    </div>
+  </div>
+
+  <!-- Table -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-title">👥 Danh Sách Học Viên</div>
+    </div>
+    <div class="table-wrap">
+      <div class="table-toolbar">
+        <div class="search-box">🔍 <input type="text" placeholder="Tìm theo tên, CCCD..." id="searchInput" oninput="filterTable()"></div>
+        <div style="display:flex;gap:.5rem">
+          <button class="btn" onclick="filterBy('all')">Tất cả</button>
+          <button class="btn" onclick="filterBy('pending')">Chờ xử lý</button>
+          <button class="btn" onclick="filterBy('done')">Đã xong</button>
+        </div>
+      </div>
+      <table>
+        <thead><tr><th>Họ và tên</th><th>CCCD</th><th>Ngày sinh</th><th>SĐT</th><th>Ngành</th><th>Trạng thái</th></tr></thead>
+        <tbody id="tableBody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Logs -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-title">📋 Nhật Ký Hoạt Động</div>
+    </div>
+    <div class="log-panel">
+      <div class="log-content" id="logContent"></div>
+    </div>
+  </div>
+
+  <footer class="footer">
+    <p>Rikkei Bot v1.0 — Tự động hóa tạo thư trúng tuyển & upload Lark Bitable</p>
+    <p style="margin-top:.3rem">Built with Python + Lark Open API · <a href="https://github.com/bmngu/Bot_rikkei" target="_blank">GitHub</a></p>
+  </footer>
+</div>
+
+<script>
+// Sample data
+const sampleData = [
+  {name:"Nguyễn Văn An",cccd:"001204012345",dob:"15/03/2004",phone:"0912345678",major:"CNTT",status:"done"},
+  {name:"Trần Thị Bình",cccd:"038304056789",dob:"22/07/2003",phone:"0987654321",major:"QTKD",status:"done"},
+  {name:"Lê Hoàng Cường",cccd:"025205098765",dob:"08/11/2005",phone:"0356789012",major:"CNTT",status:"pending"},
+  {name:"Phạm Minh Đức",cccd:"001104034567",dob:"30/01/2004",phone:"0871234567",major:"CNTT",status:"done"},
+  {name:"Hoàng Thị Lan",cccd:"036203076543",dob:"12/09/2003",phone:"0943216789",major:"QTKD",status:"error"},
+  {name:"Võ Quốc Bảo",cccd:"048305023456",dob:"05/06/2005",phone:"0769876543",major:"CNTT",status:"pending"},
+  {name:"Đỗ Thị Hương",cccd:"014204087654",dob:"18/04/2004",phone:"0821357924",major:"QTKD",status:"done"},
+  {name:"Bùi Thanh Tùng",cccd:"022305045678",dob:"27/12/2005",phone:"0398765432",major:"CNTT",status:"done"},
+  {name:"Ngô Thị Mai",cccd:"001203067890",dob:"03/02/2003",phone:"0915678901",major:"QTKD",status:"pending"},
+  {name:"Dương Văn Phú",cccd:"037204054321",dob:"20/08/2004",phone:"0862345678",major:"CNTT",status:"done"},
+];
+
+let currentFilter = 'all';
+
+function renderTable(data) {
+  const tbody = document.getElementById('tableBody');
+  tbody.innerHTML = data.map(r => `<tr data-status="${r.status}">
+    <td class="td-name">${r.name}</td>
+    <td class="td-mono">${r.cccd}</td>
+    <td>${r.dob}</td>
+    <td class="td-mono">${r.phone}</td>
+    <td><span class="chip chip-${r.major.toLowerCase()}">${r.major}</span></td>
+    <td><span class="chip chip-${r.status}">${r.status==='done'?'✓ Đã xong':r.status==='pending'?'⏳ Chờ':'⚠ Lỗi'}</span></td>
+  </tr>`).join('');
+}
+
+function filterTable() {
+  const q = document.getElementById('searchInput').value.toLowerCase();
+  const filtered = sampleData.filter(r => {
+    const matchSearch = !q || r.name.toLowerCase().includes(q) || r.cccd.includes(q);
+    const matchStatus = currentFilter === 'all' || r.status === currentFilter;
+    return matchSearch && matchStatus;
+  });
+  renderTable(filtered);
+}
+
+function filterBy(f) {
+  currentFilter = f;
+  filterTable();
+}
+
+// Logs
+const logs = [
+  {time:"23:30:12",type:"info",msg:"Khởi động Rikkei Bot v1.0..."},
+  {time:"23:30:13",type:"ok",msg:"✓ Kết nối Lark API thành công (tenant_access_token)"},
+  {time:"23:30:15",type:"info",msg:"Đang fetch dữ liệu từ Bitable..."},
+  {time:"23:30:18",type:"ok",msg:"✓ Đã lấy 247 bản ghi, clean data hoàn tất"},
+  {time:"23:30:19",type:"info",msg:"Xuất Excel backup: Data_Lark_Cleaned_Backup_17-05-2026.xlsx"},
+  {time:"23:30:20",type:"warn",msg:"⚠ 5 bản ghi thiếu số CCCD — đã bỏ qua"},
+  {time:"23:30:21",type:"ok",msg:"✓ Mail merge 53 học viên mới (CNTT: 35, QTKD: 18)"},
+  {time:"23:31:45",type:"ok",msg:"✓ Chuyển đổi DOCX → PDF hoàn tất"},
+  {time:"23:32:00",type:"ok",msg:"✓ Upload 48/53 file lên Lark thành công"},
+  {time:"23:32:01",type:"err",msg:"✗ 5 file upload lỗi — timeout kết nối"},
+];
+
+function renderLogs() {
+  document.getElementById('logContent').innerHTML = logs.map(l =>
+    `<div><span class="log-time">[${l.time}]</span><span class="log-${l.type}">${l.msg}</span></div>`
+  ).join('');
+}
+
+let currentEventSource = null;
+
+function appendLog(msg, type='info') {
+    const time = new Date().toLocaleTimeString('vi-VN', {hour12: false});
+    const logContent = document.getElementById('logContent');
+    const div = document.createElement('div');
+    // escape html
+    const txt = document.createTextNode(msg);
+    const spanMsg = document.createElement('span');
+    spanMsg.className = `log-${type}`;
+    spanMsg.appendChild(txt);
+    div.innerHTML = `<span class="log-time">[${time}]</span>`;
+    div.appendChild(spanMsg);
+    logContent.appendChild(div);
+    logContent.scrollTop = logContent.scrollHeight;
+}
+
+function processLog(msg) {
+    let type = 'info';
+    if(msg.includes('LỖI') || msg.includes('✗')) type = 'err';
+    else if(msg.includes('⚠') || msg.includes('warn')) type = 'warn';
+    else if(msg.includes('✓') || msg.includes('Thành công')) type = 'ok';
+    appendLog(msg, type);
+    
+    // Auto-update Pipeline UI based on logs (heuristic)
+    const steps = document.querySelectorAll('.pipe-step');
+    if(msg.includes('Đang lấy dữ liệu') || msg.includes('Fetch')) activateStep(steps, 1);
+    else if(msg.includes('Bắt đầu trộn thư') || msg.includes('Mail Merge')) activateStep(steps, 2);
+    else if(msg.includes('chuyển đổi hàng loạt')) activateStep(steps, 3);
+    else if(msg.includes('Upload lên Lark')) activateStep(steps, 4);
+    else if(msg.includes('HOÀN TẤT')) activateStep(steps, 5); // done all
+}
+
+function activateStep(steps, index) {
+    for(let i=0; i<steps.length; i++) {
+        if(i < index) {
+            steps[i].classList.remove('active');
+            steps[i].classList.add('done');
+            steps[i].querySelector('.status').className = 'status ok';
+            steps[i].querySelector('.status').textContent = '✓ Hoàn tất';
+        } else if (i === index) {
+            steps[i].classList.add('active');
+            steps[i].classList.remove('done');
+            steps[i].querySelector('.status').className = 'status run';
+            steps[i].querySelector('.status').textContent = '⏳ Đang xử lý...';
+        } else {
+            steps[i].classList.remove('active', 'done');
+            steps[i].querySelector('.status').className = 'status wait';
+            steps[i].querySelector('.status').textContent = '—';
+        }
+    }
+}
+
+function parseLarkLink(link) {
+  try {
+    const url = new URL(link);
+    const pathParts = url.pathname.split('/');
+    const baseIdx = pathParts.indexOf('base');
+    const appToken = baseIdx !== -1 ? pathParts[baseIdx + 1] : '';
+    const tableId = url.searchParams.get('table') || '';
+    return { appToken, tableId };
+  } catch (e) {
+    return { appToken: '', tableId: '' };
+  }
+}
+
+function runRealtime(btnId, mode) {
+  const apiId = document.getElementById('apiId').value.trim();
+  const apiSecret = document.getElementById('apiSecret').value.trim();
+  const crmLink = document.getElementById('crmLink').value.trim();
+  
+  if(!apiId || !apiSecret || !crmLink) {
+    alert("Vui lòng điền đầy đủ Cấu Hình Kết Nối API!");
+    return;
+  }
+  
+  const parsed = parseLarkLink(crmLink);
+  if(!parsed.appToken || !parsed.tableId) {
+    alert("Link CRM không đúng định dạng Lark Base (thiếu App Token hoặc Table ID)!");
+    return;
+  }
+  
+  const configData = {
+    APP_ID: apiId,
+    APP_SECRET: apiSecret,
+    APP_TOKEN: parsed.appToken,
+    TABLE_ID: parsed.tableId
+  };
+  
+  const btn = document.getElementById(btnId);
+  const originalText = btn.textContent;
+  btn.textContent = '⏳ Đang chạy...';
+  btn.disabled = true;
+
+  // Xóa log cũ
+  document.getElementById('logContent').innerHTML = '';
+  appendLog(`>>> Bắt đầu chuẩn bị chế độ: ${mode}`, 'info');
+  
+  // Đặt lại pipeline UI về bước 0 (Auth)
+  activateStep(document.querySelectorAll('.pipe-step'), 0);
+
+  if(currentEventSource) currentEventSource.close();
+
+  fetch('/api/run', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({config: configData, mode: mode})
+  }).then(() => {
+      currentEventSource = new EventSource('/api/stream');
+      currentEventSource.onmessage = function(e) {
+          const data = JSON.parse(e.data);
+          if(data.type === 'done') {
+              currentEventSource.close();
+              btn.textContent = '✓ Hoàn tất!';
+              btn.style.background = 'var(--green)';
+              btn.style.borderColor = 'var(--green)';
+              activateStep(document.querySelectorAll('.pipe-step'), 5);
+              setTimeout(() => { 
+                btn.textContent = originalText; 
+                btn.disabled = false; 
+                if(btnId === 'btnRunOverwrite') {
+                  btn.style.background = 'var(--red)'; 
+                  btn.style.borderColor = 'var(--red)';
+                } else {
+                  btn.style.background = ''; 
+                  btn.style.borderColor = ''; 
+                }
+              }, 3000);
+          } else {
+              processLog(data.message);
+          }
+      };
+      currentEventSource.onerror = function() {
+          appendLog('Mất kết nối tới máy chủ (Server-Sent Events).', 'err');
+          currentEventSource.close();
+      };
+  }).catch(err => {
+      appendLog('Không thể gọi API: ' + err, 'err');
+      btn.disabled = false;
+      btn.textContent = originalText;
+  });
+}
+
+function runOverwrite() {
+  if(confirm("Bạn có chắc? Sẽ xóa dữ liệu cũ và ghi đè dữ liệu mới")) {
+    runRealtime('btnRunOverwrite', 'overwrite');
+  }
+}
+
+function runUpdate() {
+  runRealtime('btnRunUpdate', 'update');
+}
+
+// Init (chỉ render bảng mẫu, log đã được xóa)
+renderTable(sampleData);
+// renderLogs(); // Xóa log mẫu
+
+</script>
+</body>
+</html>
