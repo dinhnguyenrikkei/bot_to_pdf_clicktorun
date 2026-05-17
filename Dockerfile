@@ -20,5 +20,5 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy toàn bộ mã nguồn vào Docker
 COPY . .
 
-# Chạy script mặc định
-CMD ["python", "full_automation_lark.py"]
+# Chạy Flask web app
+CMD ["python", "app.py"]

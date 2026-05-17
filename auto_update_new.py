@@ -370,7 +370,16 @@ def run_automation():
     print("-> Xong phần trộn thư.")
     
     print("\n📄 Bắt đầu chuyển đổi hàng loạt sang PDF (Mất vài phút)...")
-    convert(str(temp_dir))
+    if sys.platform == "win32":
+        convert(str(temp_dir))
+    else:
+        import subprocess
+        print("Đang dùng LibreOffice để chuyển đổi DOCX -> PDF trên Linux...")
+        for docx_file in temp_dir.glob("*.docx"):
+            subprocess.run([
+                "libreoffice", "--headless", "--convert-to", "pdf", 
+                "--outdir", str(temp_dir), str(docx_file)
+            ], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     
     print("\n📦 Đang nén các file PDF vào file ZIP theo ngành...")
     zip_cntt = zipfile.ZipFile("PDF_TrungTuyen_CNTT.zip", 'w', zipfile.ZIP_DEFLATED)
