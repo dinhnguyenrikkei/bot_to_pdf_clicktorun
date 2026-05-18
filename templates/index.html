@@ -548,6 +548,9 @@ function runRealtime(btnId, mode) {
                 btnUpdate.style.background = ''; 
                 btnUpdate.style.borderColor = ''; 
               }, 3000);
+          } else if(data.type === 'ping') {
+              // Bỏ qua tin nhắn keep-alive ping một cách im lặng
+              console.log("SSE keep-alive ping received.");
           } else {
               processLog(data.message);
           }

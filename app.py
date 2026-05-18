@@ -135,12 +135,17 @@ def download_file(filename):
 def stream():
     def event_stream():
         while True:
-            msg = log_queue.get()
-            if msg == "===DONE===":
-                yield f"data: {json.dumps({'type': 'done'})}\n\n"
-                break
-            else:
-                yield f"data: {json.dumps({'type': 'log', 'message': msg})}\n\n"
+            try:
+                # Đợi tối đa 15 giây, nếu trống thì gửi gói tin ping keep-alive
+                msg = log_queue.get(timeout=15.0)
+                if msg == "===DONE===":
+                    yield f"data: {json.dumps({'type': 'done'})}\n\n"
+                    break
+                else:
+                    yield f"data: {json.dumps({'type': 'log', 'message': msg})}\n\n"
+            except queue.Empty:
+                # Gửi sự kiện ping để tránh Render/Cloudflare/Browser ngắt kết nối do quá lâu không có dữ liệu
+                yield f"data: {json.dumps({'type': 'ping'})}\n\n"
     return Response(event_stream(), mimetype="text/event-stream")
 
 if __name__ == '__main__':

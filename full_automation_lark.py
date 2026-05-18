@@ -396,8 +396,12 @@ def run_automation():
         convert(str(temp_dir))
     else:
         import subprocess
-        print("Đang dùng LibreOffice để chuyển đổi DOCX -> PDF trên Linux...")
-        for docx_file in temp_dir.glob("*.docx"):
+        docx_files = list(temp_dir.glob("*.docx"))
+        total_conv = len(docx_files)
+        print(f"Đang dùng LibreOffice để chuyển đổi DOCX -> PDF trên Linux ({total_conv} file)...")
+        for idx, docx_file in enumerate(docx_files, 1):
+            if idx % 10 == 0 or idx == total_conv:
+                print(f"-> Đang convert PDF: {idx}/{total_conv} file...", flush=True)
             subprocess.run([
                 "libreoffice", "--headless", "--convert-to", "pdf", 
                 "--outdir", str(temp_dir), str(docx_file)
