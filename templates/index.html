@@ -347,6 +347,7 @@ function renderLogs() {
 }
 
 let currentEventSource = null;
+let sseErrorCount = 0;
 
 function appendLog(msg, type='info') {
     const time = new Date().toLocaleTimeString('vi-VN', {hour12: false});
@@ -497,8 +498,10 @@ function runRealtime(btnId, mode) {
       headers: {'Content-Type': 'application/json'},
       body: JSON.stringify({config: configData, mode: mode})
   }).then(() => {
+      sseErrorCount = 0;
       currentEventSource = new EventSource('/api/stream');
       currentEventSource.onmessage = function(e) {
+          sseErrorCount = 0; // Reset khi nhận tin nhắn thành công
           const data = JSON.parse(e.data);
           if(data.type === 'done') {
               currentEventSource.close();
@@ -556,10 +559,23 @@ function runRealtime(btnId, mode) {
           }
       };
       currentEventSource.onerror = function() {
-          appendLog('Mất kết nối tới máy chủ (Server-Sent Events).', 'err');
+          // Nếu đã hoàn tất tiến trình, bỏ qua lỗi ngắt kết nối tự nhiên khi đóng stream
+          if (clickedBtn.textContent.includes('Hoàn tất')) {
+              currentEventSource.close();
+              return;
+          }
+          
+          sseErrorCount++;
+          if (sseErrorCount <= 5) {
+              // Tự động kết nối lại im lặng (trình duyệt tự làm), chỉ hiển thị cảnh báo nhẹ
+              appendLog('🔄 Đường truyền bận, đang tự động kết nối lại với máy chủ...', 'warn');
+              return;
+          }
+          
+          appendLog('Mất kết nối tới máy chủ (Server-Sent Events) quá lâu.', 'err');
           currentEventSource.close();
           
-          alert("LỖI KẾT NỐI: Mất kết nối Server-Sent Events với máy chủ. Tiến trình xử lý có thể đã bị dừng đột ngột hoặc timeout. Vui lòng kiểm tra log trên Render!");
+          alert("LỖI KẾT NỐI: Mất kết nối Server-Sent Events với máy chủ quá lâu. Vui lòng tải lại trang hoặc kiểm tra log trên Render!");
           
           // Reset lại trạng thái hoạt động của cả hai nút để người dùng chạy lại
           btnOverwrite.disabled = false;
