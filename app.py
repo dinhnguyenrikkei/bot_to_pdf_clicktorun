@@ -4,9 +4,17 @@ import io
 import json
 import threading
 import queue
-from flask import Flask, request, render_template, Response, jsonify
+from flask import Flask, request, render_template, Response, jsonify, send_from_directory
 
 app = Flask(__name__)
+
+# Configure stdout/stderr encoding to UTF-8 to prevent CP1252/Windows encoding crashes
+for stream in [sys.stdout, sys.stderr]:
+    if hasattr(stream, 'reconfigure'):
+        try:
+            stream.reconfigure(encoding='utf-8')
+        except Exception:
+            pass
 
 # Queue for real-time logs
 log_queue = queue.Queue()
@@ -19,7 +27,14 @@ class StreamCapture:
         if s:
             if isinstance(s, bytes):
                 s = s.decode('utf-8', errors='replace')
-            self.original_stdout.write(s)
+            try:
+                self.original_stdout.write(s)
+            except UnicodeEncodeError:
+                try:
+                    enc = self.original_stdout.encoding or 'utf-8'
+                    self.original_stdout.write(s.encode(enc, errors='replace').decode(enc, errors='replace'))
+                except Exception:
+                    pass
             self.original_stdout.flush()
             if s.strip():
                 log_queue.put(s)
@@ -74,6 +89,14 @@ def run():
     # Save API config
     with open('config.json', 'w', encoding='utf-8') as f:
         json.dump(config_data, f, indent=4)
+        
+    # Clear old results files (JSON & ZIP) to ensure clean pipeline runs
+    for f_path in ['processed_students.json', 'PDF_TrungTuyen_CNTT.zip', 'PDF_TrungTuyen_QTKD.zip']:
+        if os.path.exists(f_path):
+            try:
+                os.remove(f_path)
+            except Exception:
+                pass
     
     # Clear old queue
     while not log_queue.empty():
@@ -82,6 +105,23 @@ def run():
     # Start thread
     threading.Thread(target=run_script, args=(mode,)).start()
     return jsonify({"status": "started"})
+
+@app.route('/api/records')
+def get_records():
+    if os.path.exists('processed_students.json'):
+        try:
+            with open('processed_students.json', 'r', encoding='utf-8') as f:
+                data = json.load(f)
+            return jsonify(data)
+        except Exception as e:
+            return jsonify({"error": str(e)}), 500
+    return jsonify([])
+
+@app.route('/api/download/<filename>')
+def download_file(filename):
+    if filename in ["PDF_TrungTuyen_CNTT.zip", "PDF_TrungTuyen_QTKD.zip"]:
+        return send_from_directory(os.getcwd(), filename, as_attachment=True)
+    return "File not found", 404
 
 @app.route('/api/stream')
 def stream():

@@ -170,22 +170,22 @@ tr:hover td{background:var(--surface2)}
   <div class="stats">
     <div class="stat-card">
       <div class="stat-label">Tổng học viên</div>
-      <div class="stat-value cyan" id="statTotal">247</div>
+      <div class="stat-value cyan" id="statTotal">0</div>
       <div class="stat-sub"><span class="stat-dot live"></span> Đồng bộ Lark</div>
     </div>
     <div class="stat-card">
       <div class="stat-label">Đã xử lý</div>
-      <div class="stat-value green" id="statDone">189</div>
+      <div class="stat-value green" id="statDone">0</div>
       <div class="stat-sub">✓ Upload thành công</div>
     </div>
     <div class="stat-card">
       <div class="stat-label">Chờ xử lý</div>
-      <div class="stat-value amber" id="statPending">53</div>
+      <div class="stat-value amber" id="statPending">0</div>
       <div class="stat-sub">Chưa có PDF</div>
     </div>
     <div class="stat-card">
       <div class="stat-label">Lỗi</div>
-      <div class="stat-value purple" id="statErr">5</div>
+      <div class="stat-value purple" id="statErr">0</div>
       <div class="stat-sub">Cần kiểm tra</div>
     </div>
   </div>
@@ -197,11 +197,32 @@ tr:hover td{background:var(--surface2)}
       <span class="badge badge-green">SẴN SÀNG</span>
     </div>
     <div class="pipeline">
-      <div class="pipe-step done"><div class="icon">🔑</div><div class="name">Auth Token</div><div class="status ok">✓ Kết nối</div><span class="pipe-arrow">→</span></div>
-      <div class="pipe-step done"><div class="icon">📥</div><div class="name">Fetch & Clean</div><div class="status ok">✓ 247 bản ghi</div><span class="pipe-arrow">→</span></div>
-      <div class="pipe-step active"><div class="icon">📝</div><div class="name">Mail Merge</div><div class="status wait">Chờ lệnh</div><span class="pipe-arrow">→</span></div>
+      <div class="pipe-step"><div class="icon">🔑</div><div class="name">Auth Token</div><div class="status wait">—</div><span class="pipe-arrow">→</span></div>
+      <div class="pipe-step"><div class="icon">📥</div><div class="name">Fetch & Clean</div><div class="status wait">—</div><span class="pipe-arrow">→</span></div>
+      <div class="pipe-step"><div class="icon">📝</div><div class="name">Mail Merge</div><div class="status wait">—</div><span class="pipe-arrow">→</span></div>
       <div class="pipe-step"><div class="icon">📄</div><div class="name">DOCX → PDF</div><div class="status wait">—</div><span class="pipe-arrow">→</span></div>
       <div class="pipe-step"><div class="icon">☁️</div><div class="name">Upload Lark</div><div class="status wait">—</div></div>
+    </div>
+  </div>
+
+  <!-- ZIP Download Section -->
+  <div class="section" id="zipDownloadSection" style="display: none; animation: fadeUp .5s ease both;">
+    <div class="section-header">
+      <div class="section-title">📦 Tải Xuống File ZIP Hàng Loạt</div>
+      <span class="badge badge-green">SẴN SÀNG TẢI</span>
+    </div>
+    <div style="background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius); padding: 1.5rem; display: flex; align-items: center; justify-content: space-between; gap: 1.5rem; box-shadow: var(--shadow-lg);">
+      <div style="display: flex; align-items: center; gap: 1rem;">
+        <div style="font-size: 2.2rem; background: var(--surface3); border-radius: var(--radius-sm); width: 60px; height: 60px; display: grid; place-items: center; border: 1px solid var(--border)">📦</div>
+        <div>
+          <h4 style="font-weight: 700; font-size: 0.95rem; margin-bottom: 0.25rem;">Nén PDF Dự Phòng Theo Ngành</h4>
+          <p style="font-size: 0.8rem; color: var(--text-dim); line-height: 1.4;">Các tài liệu PDF được tạo trong quá trình Mail Merge đã được nén sẵn thành 2 file ZIP phân theo ngành học để phục vụ việc tải về lưu trữ hoặc chỉnh sửa ngoại tuyến.</p>
+        </div>
+      </div>
+      <div style="display: flex; gap: 0.75rem; flex-shrink: 0;">
+        <a href="/api/download/PDF_TrungTuyen_CNTT.zip" class="btn btn-primary" style="background: var(--accent); border-color: var(--accent);"><span class="icon">📥</span> Tải ZIP Ngành CNTT</a>
+        <a href="/api/download/PDF_TrungTuyen_QTKD.zip" class="btn btn-primary" style="background: var(--purple); border-color: var(--purple);"><span class="icon">📥</span> Tải ZIP Ngành QTKD</a>
+      </div>
     </div>
   </div>
 
@@ -258,6 +279,11 @@ const sampleData = [
 ];
 
 let currentFilter = 'all';
+let totalStudents = 0;
+let doneStudents = 0;
+let pendingStudents = 0;
+let errStudents = 0;
+let realStudentData = [];
 
 function renderTable(data) {
   const tbody = document.getElementById('tableBody');
@@ -283,7 +309,8 @@ function renderEmptyTable() {
 
 function filterTable() {
   const q = document.getElementById('searchInput').value.toLowerCase();
-  const filtered = sampleData.filter(r => {
+  const dataSource = realStudentData.length > 0 ? realStudentData : sampleData;
+  const filtered = dataSource.filter(r => {
     const matchSearch = !q || r.name.toLowerCase().includes(q) || r.cccd.includes(q);
     const matchStatus = currentFilter === 'all' || r.status === currentFilter;
     return matchSearch && matchStatus;
@@ -347,6 +374,27 @@ function processLog(msg) {
     else if(msg.includes('chuyển đổi hàng loạt')) activateStep(steps, 3);
     else if(msg.includes('Upload lên Lark')) activateStep(steps, 4);
     else if(msg.includes('HOÀN TẤT')) activateStep(steps, 5); // done all
+    
+    // Phân tích log để cập nhật thống kê thời gian thực
+    const matchTotal = msg.match(/Đã lấy và chuẩn hóa thành công (\d+)/) || msg.match(/Mail Merge.*cho (\d+)/) || msg.match(/cho (\d+) học sinh/);
+    if (matchTotal) {
+        totalStudents = parseInt(matchTotal[1]);
+        pendingStudents = totalStudents;
+        document.getElementById('statTotal').textContent = totalStudents;
+        document.getElementById('statPending').textContent = pendingStudents;
+    }
+    
+    if (msg.includes('Thành công! ✓')) {
+        doneStudents++;
+        if (pendingStudents > 0) pendingStudents--;
+        document.getElementById('statDone').textContent = doneStudents;
+        document.getElementById('statPending').textContent = pendingStudents;
+    } else if (msg.includes('LỖI Cập nhật!') || msg.includes('LỖI Upload!') || msg.includes('LỖI Kết nối:') || msg.includes('Không tìm thấy file PDF!')) {
+        errStudents++;
+        if (pendingStudents > 0) pendingStudents--;
+        document.getElementById('statErr').textContent = errStudents;
+        document.getElementById('statPending').textContent = pendingStudents;
+    }
 }
 
 function activateStep(steps, index) {
@@ -423,6 +471,19 @@ function runRealtime(btnId, mode) {
   appendLog(`>>> Bắt đầu chuẩn bị chế độ: ${mode}`, 'info');
   renderEmptyTable();
   
+  // Đặt lại các biến đếm và ẩn vùng tải file ZIP
+  totalStudents = 0;
+  doneStudents = 0;
+  pendingStudents = 0;
+  errStudents = 0;
+  realStudentData = [];
+  
+  document.getElementById('statTotal').textContent = '0';
+  document.getElementById('statDone').textContent = '0';
+  document.getElementById('statPending').textContent = '0';
+  document.getElementById('statErr').textContent = '0';
+  document.getElementById('zipDownloadSection').style.display = 'none';
+  
   // Đặt lại pipeline UI về bước 0 (Auth)
   activateStep(document.querySelectorAll('.pipe-step'), 0);
 
@@ -443,8 +504,35 @@ function runRealtime(btnId, mode) {
               clickedBtn.style.borderColor = 'var(--green)';
               activateStep(document.querySelectorAll('.pipe-step'), 5);
               
-              // RENDER DANH SÁCH HỌC VIÊN CHỈ KHI CHẠY XONG THÀNH CÔNG
-              renderTable(sampleData);
+              // LẤY DỮ LIỆU THỰC TẾ HỌC VIÊN TỪ SERVER SAU KHI CHẠY XONG
+              fetch('/api/records')
+                  .then(res => res.json())
+                  .then(records => {
+                      realStudentData = records;
+                      if (realStudentData && realStudentData.length > 0) {
+                          // Đồng bộ lại các con số thống kê chính xác tuyệt đối từ danh sách thực tế
+                          const total = realStudentData.length;
+                          const done = realStudentData.filter(r => r.status === 'done').length;
+                          const err = realStudentData.filter(r => r.status === 'error').length;
+                          const pending = total - done - err;
+                          
+                          document.getElementById('statTotal').textContent = total;
+                          document.getElementById('statDone').textContent = done;
+                          document.getElementById('statErr').textContent = err;
+                          document.getElementById('statPending').textContent = pending;
+                          
+                          renderTable(realStudentData);
+                      } else {
+                          renderEmptyTable();
+                      }
+                  })
+                  .catch(err => {
+                      console.error("Lỗi lấy danh sách học viên thực tế:", err);
+                      renderEmptyTable();
+                  });
+                  
+              // Hiển thị phần tải file ZIP để người dùng download
+              document.getElementById('zipDownloadSection').style.display = 'block';
               
               setTimeout(() => { 
                 btnOverwrite.disabled = false; 
