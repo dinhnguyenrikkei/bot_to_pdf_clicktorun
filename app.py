@@ -29,6 +29,14 @@ class StreamCapture:
                 s = s.decode('utf-8', errors='replace')
             try:
                 self.original_stdout.write(s)
+            except TypeError:
+                try:
+                    if isinstance(s, str):
+                        self.original_stdout.write(s.encode('utf-8', errors='replace'))
+                    else:
+                        self.original_stdout.write(str(s))
+                except Exception:
+                    pass
             except UnicodeEncodeError:
                 try:
                     enc = self.original_stdout.encoding or 'utf-8'
