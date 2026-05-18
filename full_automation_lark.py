@@ -295,7 +295,6 @@ def upload_file_to_lark(token, file_name, file_bytes):
 
 def update_bitable_record(token, record_id, file_token):
     url = f"https://open.larksuite.com/open-apis/bitable/v1/apps/{APP_TOKEN}/tables/{TABLE_ID}/records/{record_id}"
-    headers = {"Authorization": f"Bearer {token}", "Content-Type": "json" if "json" in str(headers.get('Content-Type')) else "application/json"}
     headers = {"Authorization": f"Bearer {token}", "Content-Type": "application/json"}
     try:
         clear_payload = {"fields": {FILE_FIELD_NAME: []}}
