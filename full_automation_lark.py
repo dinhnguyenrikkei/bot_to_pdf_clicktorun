@@ -290,6 +290,21 @@ def upload_file_to_lark(token, file_name, file_bytes):
     res = requests.post(url, headers=headers, data=data, files=files).json()
     if res.get('code') != 0:
         print(f" [!] Lỗi upload {file_name}: {res}")
+        return None
+    return res.get('data', {}).get('file_token')
+
+def update_bitable_record(token, record_id, file_token):
+    url = f"https://open.larksuite.com/open-apis/bitable/v1/apps/{APP_TOKEN}/tables/{TABLE_ID}/records/{record_id}"
+    headers = {"Authorization": f"Bearer {token}", "Content-Type": "json" if "json" in str(headers.get('Content-Type')) else "application/json"}
+    headers = {"Authorization": f"Bearer {token}", "Content-Type": "application/json"}
+    try:
+        clear_payload = {"fields": {FILE_FIELD_NAME: []}}
+        requests.put(url, headers=headers, json=clear_payload)
+    except Exception:
+        pass
+    payload = {"fields": {FILE_FIELD_NAME: [{"file_token": file_token}]}}
+    res = requests.put(url, headers=headers, json=payload).json()
+    return res.get('code') == 0
   # ==========================================
 # 4. CHẠY PIPELINE
 # ==========================================

@@ -88,9 +88,10 @@ body::before{content:'';position:fixed;top:0;left:0;right:0;bottom:0;background:
 .search-box{display:flex;align-items:center;gap:.5rem;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-xs);padding:.4rem .75rem;min-width:260px}
 .search-box input{background:none;border:none;color:var(--text);font-family:var(--font);font-size:.82rem;outline:none;width:100%}
 .search-box input::placeholder{color:var(--text-muted)}
+.table-container{max-height:450px;overflow-y:auto}
 table{width:100%;border-collapse:collapse}
-thead{background:var(--surface2)}
-th{text-align:left;padding:.7rem 1rem;font-size:.7rem;text-transform:uppercase;letter-spacing:.05em;color:var(--text-muted);font-weight:600;border-bottom:1px solid var(--border)}
+thead{background:var(--surface2);position:sticky;top:0;z-index:10}
+th{text-align:left;padding:.7rem 1rem;font-size:.7rem;text-transform:uppercase;letter-spacing:.05em;color:var(--text-muted);font-weight:600;border-bottom:1px solid var(--border);background:var(--surface2);box-shadow:inset 0 -1px 0 var(--border)}
 td{padding:.65rem 1rem;font-size:.82rem;border-bottom:1px solid #1e2a3f;vertical-align:middle}
 tr:hover td{background:var(--surface2)}
 .td-name{font-weight:500;color:#fff}
@@ -240,10 +241,12 @@ tr:hover td{background:var(--surface2)}
           <button class="btn" onclick="filterBy('done')">Đã xong</button>
         </div>
       </div>
-      <table>
-        <thead><tr><th>Họ và tên</th><th>CCCD</th><th>Ngày sinh</th><th>SĐT</th><th>Ngành</th><th>Trạng thái</th></tr></thead>
-        <tbody id="tableBody"></tbody>
-      </table>
+      <div class="table-container">
+        <table>
+          <thead><tr><th>Họ và tên</th><th>CCCD</th><th>Ngày sinh</th><th>SĐT</th><th>Ngành</th><th>Trạng thái</th></tr></thead>
+          <tbody id="tableBody"></tbody>
+        </table>
+      </div>
     </div>
   </div>
 

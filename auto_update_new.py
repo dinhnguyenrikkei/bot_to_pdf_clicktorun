@@ -296,6 +296,15 @@ def upload_file_to_lark(token, file_name, file_bytes):
 def update_bitable_record(token, record_id, file_token):
     url = f"https://open.larksuite.com/open-apis/bitable/v1/apps/{APP_TOKEN}/tables/{TABLE_ID}/records/{record_id}"
     headers = {"Authorization": f"Bearer {token}", "Content-Type": "application/json"}
+    
+    # 1. Thao tác xóa cột file cũ trước để tránh lỗi xung đột hoặc tích tụ nhiều file trong một ô Bitable
+    try:
+        clear_payload = {"fields": {FILE_FIELD_NAME: []}}
+        requests.put(url, headers=headers, json=clear_payload)
+    except Exception:
+        pass
+        
+    # 2. Cập nhật file học viên mới tinh
     payload = {"fields": {FILE_FIELD_NAME: [{"file_token": file_token}]}}
     res = requests.put(url, headers=headers, json=payload).json()
     return res.get('code') == 0
