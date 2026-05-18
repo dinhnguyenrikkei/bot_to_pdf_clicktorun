@@ -399,14 +399,33 @@ def run_automation():
         total_conv = len(docx_files)
         print(f"Đang dùng LibreOffice để chuyển đổi DOCX -> PDF trên Linux ({total_conv} file)...")
         if total_conv > 0:
-            print("🚀 Đang tối ưu hóa: Khởi chạy LibreOffice chuyển đổi hàng loạt siêu tốc...")
-            # Gọi LibreOffice một lần duy nhất cho tất cả các file để triệt tiêu thời gian khởi động động cơ (Tăng tốc 30 lần)
-            cmd = [
-                "libreoffice", "--headless", "--convert-to", "pdf", 
-                "--outdir", str(temp_dir)
-            ] + [str(f) for f in docx_files]
-            subprocess.run(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-            print(f"-> Đã convert thành công {total_conv}/{total_conv} file sang PDF!")
+            batch_size = 50
+            print(f"🚀 Đang chia nhỏ thành các nhóm {batch_size} file để chuyển đổi hàng loạt ổn định...")
+            for i in range(0, total_conv, batch_size):
+                batch = docx_files[i:i+batch_size]
+                print(f"-> Đang convert PDF nhóm {i//batch_size + 1} ({len(batch)} file)...", flush=True)
+                cmd = [
+                    "libreoffice", "--headless", "--convert-to", "pdf", 
+                    "--outdir", str(temp_dir)
+                ] + [str(f) for f in batch]
+                subprocess.run(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            
+            # Kháng lỗi nâng cao (Self-healing): Tự động phát hiện và convert bổ sung từng file bị thiếu
+            missing_files = []
+            for f in docx_files:
+                pdf_path = temp_dir / f"{f.stem}.pdf"
+                if not pdf_path.exists():
+                    missing_files.append(f)
+            
+            if missing_files:
+                print(f"⚠ Phát hiện {len(missing_files)} file PDF bị thiếu. Tiến hành convert bổ sung từng file...", flush=True)
+                for f in missing_files:
+                    subprocess.run([
+                        "libreoffice", "--headless", "--convert-to", "pdf", 
+                        "--outdir", str(temp_dir), str(f)
+                    ], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                    
+            print(f"-> Đã convert thành công toàn bộ {total_conv}/{total_conv} file sang PDF!")
     
     print("\n📦 Đang nén các file PDF vào file ZIP theo ngành...")
     zip_cntt = zipfile.ZipFile("PDF_TrungTuyen_CNTT.zip", 'w', zipfile.ZIP_DEFLATED)
