@@ -271,6 +271,16 @@ function renderTable(data) {
   </tr>`).join('');
 }
 
+function renderEmptyTable() {
+  const tbody = document.getElementById('tableBody');
+  tbody.innerHTML = `<tr>
+    <td colspan="6" style="text-align: center; color: var(--text-muted); padding: 3rem 1rem;">
+      <div style="font-size: 2rem; margin-bottom: 0.5rem;">👥</div>
+      <div>Chưa có dữ liệu học viên. Danh sách sẽ hiển thị sau khi chạy thành công Pipeline.</div>
+    </td>
+  </tr>`;
+}
+
 function filterTable() {
   const q = document.getElementById('searchInput').value.toLowerCase();
   const filtered = sampleData.filter(r => {
@@ -395,14 +405,23 @@ function runRealtime(btnId, mode) {
     TABLE_ID: parsed.tableId
   };
   
-  const btn = document.getElementById(btnId);
-  const originalText = btn.textContent;
-  btn.textContent = '⏳ Đang chạy...';
-  btn.disabled = true;
+  const btnOverwrite = document.getElementById('btnRunOverwrite');
+  const btnUpdate = document.getElementById('btnRunUpdate');
+  
+  const originalTextOverwrite = '▶ Tạo mới / Ghi đè';
+  const originalTextUpdate = '▶ Update bảng';
+  
+  // Vô hiệu hóa cả hai nút để tránh chạy song song
+  btnOverwrite.disabled = true;
+  btnUpdate.disabled = true;
+  
+  const clickedBtn = document.getElementById(btnId);
+  clickedBtn.textContent = '⏳ Đang chạy...';
 
-  // Xóa log cũ
+  // Xóa log cũ và reset bảng về trống
   document.getElementById('logContent').innerHTML = '';
   appendLog(`>>> Bắt đầu chuẩn bị chế độ: ${mode}`, 'info');
+  renderEmptyTable();
   
   // Đặt lại pipeline UI về bước 0 (Auth)
   activateStep(document.querySelectorAll('.pipe-step'), 0);
@@ -419,20 +438,24 @@ function runRealtime(btnId, mode) {
           const data = JSON.parse(e.data);
           if(data.type === 'done') {
               currentEventSource.close();
-              btn.textContent = '✓ Hoàn tất!';
-              btn.style.background = 'var(--green)';
-              btn.style.borderColor = 'var(--green)';
+              clickedBtn.textContent = '✓ Hoàn tất!';
+              clickedBtn.style.background = 'var(--green)';
+              clickedBtn.style.borderColor = 'var(--green)';
               activateStep(document.querySelectorAll('.pipe-step'), 5);
+              
+              // RENDER DANH SÁCH HỌC VIÊN CHỈ KHI CHẠY XONG THÀNH CÔNG
+              renderTable(sampleData);
+              
               setTimeout(() => { 
-                btn.textContent = originalText; 
-                btn.disabled = false; 
-                if(btnId === 'btnRunOverwrite') {
-                  btn.style.background = 'var(--red)'; 
-                  btn.style.borderColor = 'var(--red)';
-                } else {
-                  btn.style.background = ''; 
-                  btn.style.borderColor = ''; 
-                }
+                btnOverwrite.disabled = false; 
+                btnUpdate.disabled = false; 
+                btnOverwrite.textContent = originalTextOverwrite; 
+                btnUpdate.textContent = originalTextUpdate; 
+                
+                btnOverwrite.style.background = 'var(--red)'; 
+                btnOverwrite.style.borderColor = 'var(--red)';
+                btnUpdate.style.background = ''; 
+                btnUpdate.style.borderColor = ''; 
               }, 3000);
           } else {
               processLog(data.message);
@@ -441,11 +464,34 @@ function runRealtime(btnId, mode) {
       currentEventSource.onerror = function() {
           appendLog('Mất kết nối tới máy chủ (Server-Sent Events).', 'err');
           currentEventSource.close();
+          
+          alert("LỖI KẾT NỐI: Mất kết nối Server-Sent Events với máy chủ. Tiến trình xử lý có thể đã bị dừng đột ngột hoặc timeout. Vui lòng kiểm tra log trên Render!");
+          
+          // Reset lại trạng thái hoạt động của cả hai nút để người dùng chạy lại
+          btnOverwrite.disabled = false;
+          btnUpdate.disabled = false;
+          btnOverwrite.textContent = originalTextOverwrite;
+          btnUpdate.textContent = originalTextUpdate;
+          
+          btnOverwrite.style.background = 'var(--red)';
+          btnOverwrite.style.borderColor = 'var(--red)';
+          btnUpdate.style.background = '';
+          btnUpdate.style.borderColor = '';
       };
   }).catch(err => {
       appendLog('Không thể gọi API: ' + err, 'err');
-      btn.disabled = false;
-      btn.textContent = originalText;
+      alert("LỖI API: Không thể gọi đến API máy chủ: " + err);
+      
+      // Reset nút
+      btnOverwrite.disabled = false;
+      btnUpdate.disabled = false;
+      btnOverwrite.textContent = originalTextOverwrite;
+      btnUpdate.textContent = originalTextUpdate;
+      
+      btnOverwrite.style.background = 'var(--red)';
+      btnOverwrite.style.borderColor = 'var(--red)';
+      btnUpdate.style.background = '';
+      btnUpdate.style.borderColor = '';
   });
 }
 
@@ -459,8 +505,8 @@ function runUpdate() {
   runRealtime('btnRunUpdate', 'update');
 }
 
-// Init (chỉ render bảng mẫu, log đã được xóa)
-renderTable(sampleData);
+// Khởi tạo ban đầu: render bảng trống chờ chạy xong
+renderEmptyTable();
 // renderLogs(); // Xóa log mẫu
 
 </script>
