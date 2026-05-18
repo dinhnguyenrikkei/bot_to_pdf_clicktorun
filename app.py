@@ -11,13 +11,14 @@ app = Flask(__name__)
 # Queue for real-time logs
 log_queue = queue.Queue()
 
-class StreamCapture(io.StringIO):
+class StreamCapture:
     def __init__(self, original_stdout):
-        super().__init__()
         self.original_stdout = original_stdout
 
     def write(self, s):
         if s:
+            if isinstance(s, bytes):
+                s = s.decode('utf-8', errors='replace')
             self.original_stdout.write(s)
             self.original_stdout.flush()
             if s.strip():
@@ -25,6 +26,9 @@ class StreamCapture(io.StringIO):
 
     def flush(self):
         self.original_stdout.flush()
+
+    def __getattr__(self, attr):
+        return getattr(self.original_stdout, attr)
 
 # Replace global stdout to capture all prints
 original_stdout = sys.stdout

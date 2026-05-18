@@ -13,7 +13,8 @@ from mailmerge import MailMerge
 from docx2pdf import convert
 
 # Đảm bảo in tiếng Việt không lỗi trên terminal
-sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
+if not hasattr(sys.stdout, 'original_stdout'):
+    sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
 
 import json
 
