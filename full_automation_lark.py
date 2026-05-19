@@ -6,7 +6,7 @@ import shutil
 import requests
 import datetime
 import re
-import pandas as pd
+from openpyxl import Workbook
 from pathlib import Path
 import zipfile
 from mailmerge import MailMerge
@@ -116,7 +116,18 @@ def clean_ngaysinh_val(val):
         if str(val).isdigit() and len(str(val)) > 10:
             dt = datetime.datetime.fromtimestamp(int(val)/1000)
             return dt.strftime('%d/%m/%Y')
-        return pd.to_datetime(val).strftime('%d/%m/%Y')
+        
+        # Thử parse các định dạng ngày phổ biến bằng pure Python
+        val_str = str(val).strip()
+        date_part = val_str.split('T')[0].split(' ')[0]
+        
+        for fmt in ('%Y-%m-%d', '%d/%m/%Y', '%Y/%m/%d', '%d-%m-%Y'):
+            try:
+                dt = datetime.datetime.strptime(date_part, fmt)
+                return dt.strftime('%d/%m/%Y')
+            except Exception:
+                continue
+        return val_str
     except Exception:
         return str(val)
 
@@ -255,26 +266,52 @@ def fetch_and_clean_records(token):
 
 def create_excel_backup(records):
     print("💾 Đang xuất dữ liệu ra file Excel Backup (Chia theo ngày)...")
-    df = pd.DataFrame(records)
-    if 'record_id' in df.columns:
-        df = df.drop(columns=['record_id'])
-    
-    # Định dạng cột text để không bị mất số 0
-    df['CCCD'] = df['CCCD'].astype(str)
-    df['SĐT'] = df['SĐT'].astype(str)
-    
-    # Phân loại và xuất nhiều file Excel
-    groups = df.groupby('Thời gian email', dropna=False)
-    for name, group in groups:
-        safe_name = str(name).strip()
-        if not safe_name or safe_name.lower() == 'nan' or safe_name.lower() == 'none':
+    # Phân loại và xuất nhiều file Excel dùng openpyxl (Không dùng pandas/numpy)
+    groups = {}
+    for r in records:
+        r_copy = r.copy()
+        r_copy.pop('record_id', None)
+        
+        r_copy['CCCD'] = str(r_copy.get('CCCD', ''))
+        r_copy['SĐT'] = str(r_copy.get('SĐT', ''))
+        
+        tg = r_copy.get('Thời gian email')
+        if tg is None:
+            tg_key = None
+        else:
+            tg_key = str(tg).strip()
+            if not tg_key or tg_key.lower() in ('nan', 'none'):
+                tg_key = None
+                
+        if tg_key not in groups:
+            groups[tg_key] = []
+        groups[tg_key].append(r_copy)
+        
+    for tg_key, group_records in groups.items():
+        if tg_key is None:
             file_name = 'Data_Lark_Cleaned_Backup_ChuaCoNgay.xlsx'
         else:
-            safe_name_file = re.sub(r'[\\/*?:"<>|]', '-', safe_name)
+            safe_name_file = re.sub(r'[\\/*?:"<>|]', '-', tg_key)
             file_name = f'Data_Lark_Cleaned_Backup_{safe_name_file}.xlsx'
             
-        group.to_excel(file_name, index=False)
-        print(f"-> Đã lưu file {file_name} ({len(group)} dòng)")
+        wb = Workbook()
+        ws = wb.active
+        ws.title = "Backup"
+        
+        headers = ['Họ và tên', 'CCCD', 'Ngày sinh', 'Nơi sinh', 'Địa chỉ', 'SĐT', 'Ngành', 'Thời gian email', 'Đã có file']
+        ws.append(headers)
+        
+        for rec in group_records:
+            row = [rec.get(h, '') for h in headers]
+            ws.append(row)
+            
+        # Định dạng cột text cho CCCD và SĐT để tránh mất số 0
+        for row in range(2, len(group_records) + 2):
+            ws.cell(row=row, column=2).number_format = '@' # Cột CCCD (cột B)
+            ws.cell(row=row, column=6).number_format = '@' # Cột SĐT (cột F)
+            
+        wb.save(file_name)
+        print(f"-> Đã lưu file {file_name} ({len(group_records)} dòng)")
 
 def upload_file_to_lark(token, file_name, file_bytes):
     url = "https://open.larksuite.com/open-apis/drive/v1/medias/upload_all"

@@ -7,11 +7,11 @@ trên bất kỳ máy tính Windows nào mà không cần cài đặt Python. Đ
 chạy ngoại tuyến (offline) hoàn toàn trên máy trạm của bạn, đảm bảo an toàn tuyệt đối cho dữ liệu.
 
 ------------------------------------------------------------------------
-🛡️ ĐẢM BẢO AN TOÀN VÀ BẢO MẬT DỮ LIỆU USER:
+🛡️ ĐẢM BẢO AN TOÀN VÀ BẢO MẬT DỮ LIỆU USER (AN TOÀN TUYỆT ĐỐI):
 ------------------------------------------------------------------------
-- Khởi chạy trực tiếp (Không dùng Temp): Các thư viện máy tính được chạy trực tiếp từ chính
-  thư mục giải nén của ứng dụng trên ổ đĩa local của bạn. Điều này giúp vượt qua hoàn toàn
-  các chính sách bảo mật Windows Defender Application Control / AppLocker chặn thư mục Temp.
+- Phiên bản Không có File nhị phân C-extensions: Ứng dụng đã được tối ưu hóa toàn bộ
+  để loại bỏ hoàn toàn các thư viện nhị phân C-extensions chưa ký số của pandas và numpy.
+  Nhờ đó, Windows Defender WDAC và SmartScreen sẽ KHÔNG BAO GIỜ báo chặn cảnh báo bảo mật nữa!
 - Hoạt động khép kín: Ứng dụng chỉ hoạt động và tạo tệp tin bên trong thư mục giải nén của nó.
   Tuyệt đối không quét, sửa đổi, hay xóa bất kỳ tệp tin cá nhân nào của bạn ở các thư mục khác
   (như ổ C, Desktop, Documents, Downloads...).
@@ -29,7 +29,7 @@ chạy ngoại tuyến (offline) hoàn toàn trên máy trạm của bạn, đ�
 3. config.sample.json   - Tệp cấu hình mẫu (an toàn để chia sẻ).
 4. Mau_mail_CNTT.docx   - Mẫu Word trộn thư ngành CNTT.
 5. Mau_mail_QTKDS.docx  - Mẫu Word trộn thư ngành QTKD.
-6. _internal/           - Thư mục hệ thống chứa DLL/thư viện cốt lõi (KHÔNG ĐƯỢC XÓA THƯ MỤC NÀY).
+6. _internal/           - Thư mục hệ thống chứa các thư viện cốt lõi (KHÔNG ĐƯỢC XÓA THƯ MỤC NÀY).
 
 ------------------------------------------------------------------------
 ⚙️ Yêu cầu hệ thống trên máy chạy:

@@ -1,5 +1,4 @@
 requests
-pandas
 openpyxl
 docx-mailmerge
 docx2pdf
