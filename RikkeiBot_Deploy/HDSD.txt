@@ -1,14 +1,17 @@
 ========================================================================
-🤖 HƯỚNG DẪN SỬ DỤNG - RIKKEI BOT DASHBOARD (LOCAL & SECURE EXE)
+🤖 HƯỚNG DẪN SỬ DỤNG - RIKKEI BOT DASHBOARD (LOCAL & SECURE PORTABLE)
 ========================================================================
 
-Phiên bản đóng gói app.exe này cho phép khởi chạy Rikkei Bot trên bất kỳ máy tính Windows nào
-mà không cần cài đặt Python hay bất kỳ thư viện phát triển nào khác. Đây là giải pháp local-first
+Phiên bản đóng gói này cho phép khởi chạy Rikkei Bot dưới dạng phần mềm di động (portable)
+trên bất kỳ máy tính Windows nào mà không cần cài đặt Python. Đây là giải pháp local-first
 chạy ngoại tuyến (offline) hoàn toàn trên máy trạm của bạn, đảm bảo an toàn tuyệt đối cho dữ liệu.
 
 ------------------------------------------------------------------------
 🛡️ ĐẢM BẢO AN TOÀN VÀ BẢO MẬT DỮ LIỆU USER:
 ------------------------------------------------------------------------
+- Khởi chạy trực tiếp (Không dùng Temp): Các thư viện máy tính được chạy trực tiếp từ chính
+  thư mục giải nén của ứng dụng trên ổ đĩa local của bạn. Điều này giúp vượt qua hoàn toàn
+  các chính sách bảo mật Windows Defender Application Control / AppLocker chặn thư mục Temp.
 - Hoạt động khép kín: Ứng dụng chỉ hoạt động và tạo tệp tin bên trong thư mục giải nén của nó.
   Tuyệt đối không quét, sửa đổi, hay xóa bất kỳ tệp tin cá nhân nào của bạn ở các thư mục khác
   (như ổ C, Desktop, Documents, Downloads...).
@@ -20,11 +23,13 @@ chạy ngoại tuyến (offline) hoàn toàn trên máy trạm của bạn, đ�
 ------------------------------------------------------------------------
 📁 Cấu trúc thư mục giải nén / chạy:
 ------------------------------------------------------------------------
-Để ứng dụng hoạt động chính xác, các tệp sau đây PHẢI nằm trong cùng một thư mục:
-1. app.exe              - File chạy chính.
+Để ứng dụng hoạt động chính xác, bạn hãy giữ nguyên cấu trúc thư mục sau khi giải nén:
+1. app.exe              - Tệp khởi chạy chính.
 2. config.json          - Chứa API Lark (có thể sửa trực tiếp hoặc cấu hình trên giao diện Web).
-3. Mau_mail_CNTT.docx   - Mẫu Word trộn thư ngành CNTT.
-4. Mau_mail_QTKDS.docx  - Mẫu Word trộn thư ngành QTKD.
+3. config.sample.json   - Tệp cấu hình mẫu (an toàn để chia sẻ).
+4. Mau_mail_CNTT.docx   - Mẫu Word trộn thư ngành CNTT.
+5. Mau_mail_QTKDS.docx  - Mẫu Word trộn thư ngành QTKD.
+6. _internal/           - Thư mục hệ thống chứa DLL/thư viện cốt lõi (KHÔNG ĐƯỢC XÓA THƯ MỤC NÀY).
 
 ------------------------------------------------------------------------
 ⚙️ Yêu cầu hệ thống trên máy chạy:
@@ -36,7 +41,7 @@ chạy ngoại tuyến (offline) hoàn toàn trên máy trạm của bạn, đ�
 ------------------------------------------------------------------------
 🚀 Hướng dẫn khởi chạy:
 ------------------------------------------------------------------------
-Bước 1: Nháy đúp chuột vào tệp `app.exe` để chạy.
+Bước 1: Nháy đúp chuột vào tệp `app.exe` trong thư mục giải nén để chạy.
         Một màn hình console đen (Terminal) sẽ xuất hiện và khởi động máy chủ Web cục bộ:
         "Khởi động Web Server tại http://0.0.0.0:5000"
         (Lưu ý: Không tắt màn hình đen này khi đang sử dụng app).

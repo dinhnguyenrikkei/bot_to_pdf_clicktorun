@@ -29,3 +29,4 @@ dist/
 # File cau hinh chua API Keys
 config.json
 RikkeiBot_Deploy/config.json
+RikkeiBot_Deploy/_internal/
