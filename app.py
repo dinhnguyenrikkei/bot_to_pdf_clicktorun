@@ -18,13 +18,37 @@ class StreamCapture(io.StringIO):
 
     def write(self, s):
         if s:
-            self.original_stdout.write(s)
-            self.original_stdout.flush()
+            # Click or Flask might pass bytes instead of str under certain Windows/PyInstaller environments
+            if isinstance(s, bytes):
+                try:
+                    s = s.decode('utf-8', errors='ignore')
+                except Exception:
+                    s = str(s)
+            
+            # Ensure writing to original stdout never crashes
+            try:
+                self.original_stdout.write(s)
+            except TypeError:
+                try:
+                    self.original_stdout.write(s.encode('utf-8', errors='ignore'))
+                except Exception:
+                    pass
+            except Exception:
+                pass
+                
+            try:
+                self.original_stdout.flush()
+            except Exception:
+                pass
+                
             if s.strip():
                 log_queue.put(s)
 
     def flush(self):
-        self.original_stdout.flush()
+        try:
+            self.original_stdout.flush()
+        except Exception:
+            pass
 
 # Replace global stdout to capture all prints
 original_stdout = sys.stdout
