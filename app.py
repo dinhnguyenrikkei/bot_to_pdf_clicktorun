@@ -72,40 +72,58 @@ sys.stdout = StreamCapture(original_stdout)
 
 def run_script(mode):
     try:
-        log_queue.put(">>> Khởi chạy Pipeline trong tiến trình cô lập để tối ưu RAM...\n")
-        
-        script_name = 'full_automation_lark.py' if mode == 'overwrite' else 'auto_update_new.py'
-        
-        # Chạy tiến trình python độc lập để giải phóng RAM triệt để khi kết thúc
-        import subprocess
-        process = subprocess.Popen(
-            [sys.executable, script_name],
-            stdout=subprocess.PIPE,
-            stderr=subprocess.STDOUT,
-            text=True,
-            bufsize=1, # Line-buffered để có log thời gian thực ngay lập tức
-            encoding='utf-8',
-            errors='replace'
-        )
-        
-        # Đọc trực tiếp luồng stdout/stderr của tiến trình con và chuyển tiếp vào log_queue
-        while True:
-            line = process.stdout.readline()
-            if not line and process.poll() is not None:
-                break
-            if line:
-                log_queue.put(line)
-                
-        process.stdout.close()
-        return_code = process.wait()
-        
-        if return_code == 0:
+        # Check if running as packaged PyInstaller EXE
+        if getattr(sys, 'frozen', False):
+            log_queue.put(">>> Khởi chạy Pipeline trong luồng xử lý (Chế độ đóng gói EXE)...\n")
+            if mode == 'overwrite':
+                import full_automation_lark
+                import importlib
+                importlib.reload(full_automation_lark)
+                full_automation_lark.run_automation()
+            elif mode == 'update':
+                import auto_update_new
+                import importlib
+                importlib.reload(auto_update_new)
+                auto_update_new.run_automation()
+            else:
+                log_queue.put("LỖI: Chế độ chạy không hợp lệ.\n")
             log_queue.put("===DONE===")
         else:
-            log_queue.put(f"\n[LỖI HỆ THỐNG]: Tiến trình con kết thúc đột ngột với mã lỗi {return_code}\n")
-            log_queue.put("===DONE===")
+            log_queue.put(">>> Khởi chạy Pipeline trong tiến trình cô lập để tối ưu RAM...\n")
+            script_name = 'full_automation_lark.py' if mode == 'overwrite' else 'auto_update_new.py'
+            
+            # Chạy tiến trình python độc lập để giải phóng RAM triệt để khi kết thúc
+            import subprocess
+            process = subprocess.Popen(
+                [sys.executable, script_name],
+                stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT,
+                text=True,
+                bufsize=1, # Line-buffered để có log thời gian thực ngay lập tức
+                encoding='utf-8',
+                errors='replace'
+            )
+            
+            # Đọc trực tiếp luồng stdout/stderr của tiến trình con và chuyển tiếp vào log_queue
+            while True:
+                line = process.stdout.readline()
+                if not line and process.poll() is not None:
+                    break
+                if line:
+                    log_queue.put(line)
+                    
+            process.stdout.close()
+            return_code = process.wait()
+            
+            if return_code == 0:
+                log_queue.put("===DONE===")
+            else:
+                log_queue.put(f"\n[LỖI HỆ THỐNG]: Tiến trình con kết thúc đột ngột với mã lỗi {return_code}\n")
+                log_queue.put("===DONE===")
     except Exception as e:
-        log_queue.put(f"\n[LỖI KHỞI CHẠY TIẾN TRÌNH CON]: {e}\n")
+        log_queue.put(f"\n[LỖI HỆ THỐNG]: {e}\n")
+        import traceback
+        log_queue.put(traceback.format_exc())
         log_queue.put("===DONE===")
 
 @app.route('/')
