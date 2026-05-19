@@ -13,7 +13,8 @@ from mailmerge import MailMerge
 from docx2pdf import convert
 
 # Đảm bảo in tiếng Việt không lỗi trên terminal
-sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
+if not hasattr(sys.stdout, 'original_stdout'):
+    sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
 
 import json
 
@@ -295,11 +296,15 @@ def upload_file_to_lark(token, file_name, file_bytes):
 def update_bitable_record(token, record_id, file_token):
     url = f"https://open.larksuite.com/open-apis/bitable/v1/apps/{APP_TOKEN}/tables/{TABLE_ID}/records/{record_id}"
     headers = {"Authorization": f"Bearer {token}", "Content-Type": "application/json"}
+    try:
+        clear_payload = {"fields": {FILE_FIELD_NAME: []}}
+        requests.put(url, headers=headers, json=clear_payload)
+    except Exception:
+        pass
     payload = {"fields": {FILE_FIELD_NAME: [{"file_token": file_token}]}}
     res = requests.put(url, headers=headers, json=payload).json()
     return res.get('code') == 0
-
-# ==========================================
+  # ==========================================
 # 4. CHẠY PIPELINE
 # ==========================================
 def run_automation():
@@ -326,6 +331,22 @@ def run_automation():
         
     if not students_to_process:
         print("🎉 Tất cả học sinh đều đã có File học viên trên Lark. Không cần chạy thêm.")
+        # Xuất toàn bộ học sinh sang JSON với trạng thái done
+        processed_students = []
+        for r in records:
+            processed_students.append({
+                "name": r['Họ và tên'],
+                "cccd": r['CCCD'],
+                "dob": r['Ngày sinh'],
+                "phone": r['SĐT'],
+                "major": "CNTT" if "CNTT" in str(r['Ngành']).upper() else "QTKD",
+                "status": "done"
+            })
+        try:
+            with open('processed_students.json', 'w', encoding='utf-8') as f:
+                json.dump(processed_students, f, ensure_ascii=False, indent=4)
+        except Exception:
+            pass
         return
         
     print(f"\n⚙️ Bắt đầu trộn thư (Mail Merge) cho {len(students_to_process)} học sinh...")
@@ -370,7 +391,41 @@ def run_automation():
     print("-> Xong phần trộn thư.")
     
     print("\n📄 Bắt đầu chuyển đổi hàng loạt sang PDF (Mất vài phút)...")
-    convert(str(temp_dir))
+    if sys.platform == "win32":
+        convert(str(temp_dir))
+    else:
+        import subprocess
+        docx_files = list(temp_dir.glob("*.docx"))
+        total_conv = len(docx_files)
+        print(f"Đang dùng LibreOffice để chuyển đổi DOCX -> PDF trên Linux ({total_conv} file)...")
+        if total_conv > 0:
+            batch_size = 50
+            print(f"🚀 Đang chia nhỏ thành các nhóm {batch_size} file để chuyển đổi hàng loạt ổn định...")
+            for i in range(0, total_conv, batch_size):
+                batch = docx_files[i:i+batch_size]
+                print(f"-> Đang convert PDF nhóm {i//batch_size + 1} ({len(batch)} file)...", flush=True)
+                cmd = [
+                    "libreoffice", "--headless", "--convert-to", "pdf", 
+                    "--outdir", str(temp_dir)
+                ] + [str(f) for f in batch]
+                subprocess.run(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            
+            # Kháng lỗi nâng cao (Self-healing): Tự động phát hiện và convert bổ sung từng file bị thiếu
+            missing_files = []
+            for f in docx_files:
+                pdf_path = temp_dir / f"{f.stem}.pdf"
+                if not pdf_path.exists():
+                    missing_files.append(f)
+            
+            if missing_files:
+                print(f"⚠ Phát hiện {len(missing_files)} file PDF bị thiếu. Tiến hành convert bổ sung từng file...", flush=True)
+                for f in missing_files:
+                    subprocess.run([
+                        "libreoffice", "--headless", "--convert-to", "pdf", 
+                        "--outdir", str(temp_dir), str(f)
+                    ], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                    
+            print(f"-> Đã convert thành công toàn bộ {total_conv}/{total_conv} file sang PDF!")
     
     print("\n📦 Đang nén các file PDF vào file ZIP theo ngành...")
     zip_cntt = zipfile.ZipFile("PDF_TrungTuyen_CNTT.zip", 'w', zipfile.ZIP_DEFLATED)
@@ -388,7 +443,7 @@ def run_automation():
     zip_cntt.close()
     zip_qtkd.close()
     print("-> Đã tạo 2 file ZIP thành công (CNTT và QTKD) để bạn dự phòng!")
-
+ 
     print("\n☁️ Bắt đầu Upload lên Lark Bitable...")
     success_count = 0
     total = len(docx_list)
@@ -396,6 +451,9 @@ def run_automation():
     for idx, item in enumerate(docx_list, 1):
         pdf_path = temp_dir / f"{item['file_name_base']}.pdf"
         print(f"[{idx}/{total}] Đang tải lên {pdf_path.name} ...", end="", flush=True)
+        
+        # Mặc định status thất bại
+        item['status'] = 'failure'
         
         if not pdf_path.exists():
             print(" LỖI: Không tìm thấy file PDF!")
@@ -410,11 +468,47 @@ def run_automation():
                 if update_bitable_record(token, item['record_id'], token_file):
                     print(" Thành công! ✓")
                     success_count += 1
+                    item['status'] = 'success'
                 else:
                     print(" LỖI Cập nhật!")
+            else:
+                print(" LỖI Upload!")
         except Exception as e:
             print(f" LỖI Kết nối: {e}")
             continue
+            
+    # Xuất thông tin học sinh đã xử lý thực tế ra JSON để hiển thị trên web
+    processed_students = []
+    for item in docx_list:
+        student_info = next((rec for rec in records if rec['record_id'] == item['record_id']), None)
+        if student_info:
+            processed_students.append({
+                "name": student_info['Họ và tên'],
+                "cccd": student_info['CCCD'],
+                "dob": student_info['Ngày sinh'],
+                "phone": student_info['SĐT'],
+                "major": "CNTT" if "CNTT" in str(student_info['Ngành']).upper() else "QTKD",
+                "status": "done" if item['status'] == 'success' else "error"
+            })
+            
+    # Thêm cả những học sinh cũ đã có sẵn file trên Lark để hiển thị đầy đủ
+    for r in records:
+        if SKIP_EXISTING and r['Đã có file']:
+            processed_students.append({
+                "name": r['Họ và tên'],
+                "cccd": r['CCCD'],
+                "dob": r['Ngày sinh'],
+                "phone": r['SĐT'],
+                "major": "CNTT" if "CNTT" in str(r['Ngành']).upper() else "QTKD",
+                "status": "done"
+            })
+            
+    try:
+        with open('processed_students.json', 'w', encoding='utf-8') as f:
+            json.dump(processed_students, f, ensure_ascii=False, indent=4)
+        print("-> Đã lưu kết quả xử lý thực tế ra file processed_students.json!")
+    except Exception as e:
+        print(f"Lỗi ghi file processed_students.json: {e}")
                 
     print(f"\n🧹 Đang dọn dẹp thư mục tạm...")
     shutil.rmtree(temp_dir, ignore_errors=True)

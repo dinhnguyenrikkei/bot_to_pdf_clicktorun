@@ -88,9 +88,10 @@ body::before{content:'';position:fixed;top:0;left:0;right:0;bottom:0;background:
 .search-box{display:flex;align-items:center;gap:.5rem;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-xs);padding:.4rem .75rem;min-width:260px}
 .search-box input{background:none;border:none;color:var(--text);font-family:var(--font);font-size:.82rem;outline:none;width:100%}
 .search-box input::placeholder{color:var(--text-muted)}
+.table-container{max-height:450px;overflow-y:auto}
 table{width:100%;border-collapse:collapse}
-thead{background:var(--surface2)}
-th{text-align:left;padding:.7rem 1rem;font-size:.7rem;text-transform:uppercase;letter-spacing:.05em;color:var(--text-muted);font-weight:600;border-bottom:1px solid var(--border)}
+thead{background:var(--surface2);position:sticky;top:0;z-index:10}
+th{text-align:left;padding:.7rem 1rem;font-size:.7rem;text-transform:uppercase;letter-spacing:.05em;color:var(--text-muted);font-weight:600;border-bottom:1px solid var(--border);background:var(--surface2);box-shadow:inset 0 -1px 0 var(--border)}
 td{padding:.65rem 1rem;font-size:.82rem;border-bottom:1px solid #1e2a3f;vertical-align:middle}
 tr:hover td{background:var(--surface2)}
 .td-name{font-weight:500;color:#fff}
@@ -170,22 +171,22 @@ tr:hover td{background:var(--surface2)}
   <div class="stats">
     <div class="stat-card">
       <div class="stat-label">Tổng học viên</div>
-      <div class="stat-value cyan" id="statTotal">247</div>
+      <div class="stat-value cyan" id="statTotal">0</div>
       <div class="stat-sub"><span class="stat-dot live"></span> Đồng bộ Lark</div>
     </div>
     <div class="stat-card">
       <div class="stat-label">Đã xử lý</div>
-      <div class="stat-value green" id="statDone">189</div>
+      <div class="stat-value green" id="statDone">0</div>
       <div class="stat-sub">✓ Upload thành công</div>
     </div>
     <div class="stat-card">
       <div class="stat-label">Chờ xử lý</div>
-      <div class="stat-value amber" id="statPending">53</div>
+      <div class="stat-value amber" id="statPending">0</div>
       <div class="stat-sub">Chưa có PDF</div>
     </div>
     <div class="stat-card">
       <div class="stat-label">Lỗi</div>
-      <div class="stat-value purple" id="statErr">5</div>
+      <div class="stat-value purple" id="statErr">0</div>
       <div class="stat-sub">Cần kiểm tra</div>
     </div>
   </div>
@@ -197,11 +198,32 @@ tr:hover td{background:var(--surface2)}
       <span class="badge badge-green">SẴN SÀNG</span>
     </div>
     <div class="pipeline">
-      <div class="pipe-step done"><div class="icon">🔑</div><div class="name">Auth Token</div><div class="status ok">✓ Kết nối</div><span class="pipe-arrow">→</span></div>
-      <div class="pipe-step done"><div class="icon">📥</div><div class="name">Fetch & Clean</div><div class="status ok">✓ 247 bản ghi</div><span class="pipe-arrow">→</span></div>
-      <div class="pipe-step active"><div class="icon">📝</div><div class="name">Mail Merge</div><div class="status wait">Chờ lệnh</div><span class="pipe-arrow">→</span></div>
+      <div class="pipe-step"><div class="icon">🔑</div><div class="name">Auth Token</div><div class="status wait">—</div><span class="pipe-arrow">→</span></div>
+      <div class="pipe-step"><div class="icon">📥</div><div class="name">Fetch & Clean</div><div class="status wait">—</div><span class="pipe-arrow">→</span></div>
+      <div class="pipe-step"><div class="icon">📝</div><div class="name">Mail Merge</div><div class="status wait">—</div><span class="pipe-arrow">→</span></div>
       <div class="pipe-step"><div class="icon">📄</div><div class="name">DOCX → PDF</div><div class="status wait">—</div><span class="pipe-arrow">→</span></div>
       <div class="pipe-step"><div class="icon">☁️</div><div class="name">Upload Lark</div><div class="status wait">—</div></div>
+    </div>
+  </div>
+
+  <!-- ZIP Download Section -->
+  <div class="section" id="zipDownloadSection" style="display: none; animation: fadeUp .5s ease both;">
+    <div class="section-header">
+      <div class="section-title">📦 Tải Xuống File ZIP Hàng Loạt</div>
+      <span class="badge badge-green">SẴN SÀNG TẢI</span>
+    </div>
+    <div style="background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius); padding: 1.5rem; display: flex; align-items: center; justify-content: space-between; gap: 1.5rem; box-shadow: var(--shadow-lg);">
+      <div style="display: flex; align-items: center; gap: 1rem;">
+        <div style="font-size: 2.2rem; background: var(--surface3); border-radius: var(--radius-sm); width: 60px; height: 60px; display: grid; place-items: center; border: 1px solid var(--border)">📦</div>
+        <div>
+          <h4 style="font-weight: 700; font-size: 0.95rem; margin-bottom: 0.25rem;">Nén PDF Dự Phòng Theo Ngành</h4>
+          <p style="font-size: 0.8rem; color: var(--text-dim); line-height: 1.4;">Các tài liệu PDF được tạo trong quá trình Mail Merge đã được nén sẵn thành 2 file ZIP phân theo ngành học để phục vụ việc tải về lưu trữ hoặc chỉnh sửa ngoại tuyến.</p>
+        </div>
+      </div>
+      <div style="display: flex; gap: 0.75rem; flex-shrink: 0;">
+        <a href="/api/download/PDF_TrungTuyen_CNTT.zip" class="btn btn-primary" style="background: var(--accent); border-color: var(--accent);"><span class="icon">📥</span> Tải ZIP Ngành CNTT</a>
+        <a href="/api/download/PDF_TrungTuyen_QTKD.zip" class="btn btn-primary" style="background: var(--purple); border-color: var(--purple);"><span class="icon">📥</span> Tải ZIP Ngành QTKD</a>
+      </div>
     </div>
   </div>
 
@@ -219,10 +241,12 @@ tr:hover td{background:var(--surface2)}
           <button class="btn" onclick="filterBy('done')">Đã xong</button>
         </div>
       </div>
-      <table>
-        <thead><tr><th>Họ và tên</th><th>CCCD</th><th>Ngày sinh</th><th>SĐT</th><th>Ngành</th><th>Trạng thái</th></tr></thead>
-        <tbody id="tableBody"></tbody>
-      </table>
+      <div class="table-container">
+        <table>
+          <thead><tr><th>Họ và tên</th><th>CCCD</th><th>Ngày sinh</th><th>SĐT</th><th>Ngành</th><th>Trạng thái</th></tr></thead>
+          <tbody id="tableBody"></tbody>
+        </table>
+      </div>
     </div>
   </div>
 
@@ -258,6 +282,11 @@ const sampleData = [
 ];
 
 let currentFilter = 'all';
+let totalStudents = 0;
+let doneStudents = 0;
+let pendingStudents = 0;
+let errStudents = 0;
+let realStudentData = [];
 
 function renderTable(data) {
   const tbody = document.getElementById('tableBody');
@@ -271,9 +300,20 @@ function renderTable(data) {
   </tr>`).join('');
 }
 
+function renderEmptyTable() {
+  const tbody = document.getElementById('tableBody');
+  tbody.innerHTML = `<tr>
+    <td colspan="6" style="text-align: center; color: var(--text-muted); padding: 3rem 1rem;">
+      <div style="font-size: 2rem; margin-bottom: 0.5rem;">👥</div>
+      <div>Chưa có dữ liệu học viên. Danh sách sẽ hiển thị sau khi chạy thành công Pipeline.</div>
+    </td>
+  </tr>`;
+}
+
 function filterTable() {
   const q = document.getElementById('searchInput').value.toLowerCase();
-  const filtered = sampleData.filter(r => {
+  const dataSource = realStudentData.length > 0 ? realStudentData : sampleData;
+  const filtered = dataSource.filter(r => {
     const matchSearch = !q || r.name.toLowerCase().includes(q) || r.cccd.includes(q);
     const matchStatus = currentFilter === 'all' || r.status === currentFilter;
     return matchSearch && matchStatus;
@@ -307,6 +347,7 @@ function renderLogs() {
 }
 
 let currentEventSource = null;
+let sseErrorCount = 0;
 
 function appendLog(msg, type='info') {
     const time = new Date().toLocaleTimeString('vi-VN', {hour12: false});
@@ -337,6 +378,27 @@ function processLog(msg) {
     else if(msg.includes('chuyển đổi hàng loạt')) activateStep(steps, 3);
     else if(msg.includes('Upload lên Lark')) activateStep(steps, 4);
     else if(msg.includes('HOÀN TẤT')) activateStep(steps, 5); // done all
+    
+    // Phân tích log để cập nhật thống kê thời gian thực
+    const matchTotal = msg.match(/Đã lấy và chuẩn hóa thành công (\d+)/) || msg.match(/Mail Merge.*cho (\d+)/) || msg.match(/cho (\d+) học sinh/);
+    if (matchTotal) {
+        totalStudents = parseInt(matchTotal[1]);
+        pendingStudents = totalStudents;
+        document.getElementById('statTotal').textContent = totalStudents;
+        document.getElementById('statPending').textContent = pendingStudents;
+    }
+    
+    if (msg.includes('Thành công! ✓')) {
+        doneStudents++;
+        if (pendingStudents > 0) pendingStudents--;
+        document.getElementById('statDone').textContent = doneStudents;
+        document.getElementById('statPending').textContent = pendingStudents;
+    } else if (msg.includes('LỖI Cập nhật!') || msg.includes('LỖI Upload!') || msg.includes('LỖI Kết nối:') || msg.includes('Không tìm thấy file PDF!')) {
+        errStudents++;
+        if (pendingStudents > 0) pendingStudents--;
+        document.getElementById('statErr').textContent = errStudents;
+        document.getElementById('statPending').textContent = pendingStudents;
+    }
 }
 
 function activateStep(steps, index) {
@@ -395,14 +457,36 @@ function runRealtime(btnId, mode) {
     TABLE_ID: parsed.tableId
   };
   
-  const btn = document.getElementById(btnId);
-  const originalText = btn.textContent;
-  btn.textContent = '⏳ Đang chạy...';
-  btn.disabled = true;
+  const btnOverwrite = document.getElementById('btnRunOverwrite');
+  const btnUpdate = document.getElementById('btnRunUpdate');
+  
+  const originalTextOverwrite = '▶ Tạo mới / Ghi đè';
+  const originalTextUpdate = '▶ Update bảng';
+  
+  // Vô hiệu hóa cả hai nút để tránh chạy song song
+  btnOverwrite.disabled = true;
+  btnUpdate.disabled = true;
+  
+  const clickedBtn = document.getElementById(btnId);
+  clickedBtn.textContent = '⏳ Đang chạy...';
 
-  // Xóa log cũ
+  // Xóa log cũ và reset bảng về trống
   document.getElementById('logContent').innerHTML = '';
   appendLog(`>>> Bắt đầu chuẩn bị chế độ: ${mode}`, 'info');
+  renderEmptyTable();
+  
+  // Đặt lại các biến đếm và ẩn vùng tải file ZIP
+  totalStudents = 0;
+  doneStudents = 0;
+  pendingStudents = 0;
+  errStudents = 0;
+  realStudentData = [];
+  
+  document.getElementById('statTotal').textContent = '0';
+  document.getElementById('statDone').textContent = '0';
+  document.getElementById('statPending').textContent = '0';
+  document.getElementById('statErr').textContent = '0';
+  document.getElementById('zipDownloadSection').style.display = 'none';
   
   // Đặt lại pipeline UI về bước 0 (Auth)
   activateStep(document.querySelectorAll('.pipe-step'), 0);
@@ -414,38 +498,110 @@ function runRealtime(btnId, mode) {
       headers: {'Content-Type': 'application/json'},
       body: JSON.stringify({config: configData, mode: mode})
   }).then(() => {
+      sseErrorCount = 0;
       currentEventSource = new EventSource('/api/stream');
       currentEventSource.onmessage = function(e) {
+          sseErrorCount = 0; // Reset khi nhận tin nhắn thành công
           const data = JSON.parse(e.data);
           if(data.type === 'done') {
               currentEventSource.close();
-              btn.textContent = '✓ Hoàn tất!';
-              btn.style.background = 'var(--green)';
-              btn.style.borderColor = 'var(--green)';
+              clickedBtn.textContent = '✓ Hoàn tất!';
+              clickedBtn.style.background = 'var(--green)';
+              clickedBtn.style.borderColor = 'var(--green)';
               activateStep(document.querySelectorAll('.pipe-step'), 5);
+              
+              // LẤY DỮ LIỆU THỰC TẾ HỌC VIÊN TỪ SERVER SAU KHI CHẠY XONG
+              fetch('/api/records')
+                  .then(res => res.json())
+                  .then(records => {
+                      realStudentData = records;
+                      if (realStudentData && realStudentData.length > 0) {
+                          // Đồng bộ lại các con số thống kê chính xác tuyệt đối từ danh sách thực tế
+                          const total = realStudentData.length;
+                          const done = realStudentData.filter(r => r.status === 'done').length;
+                          const err = realStudentData.filter(r => r.status === 'error').length;
+                          const pending = total - done - err;
+                          
+                          document.getElementById('statTotal').textContent = total;
+                          document.getElementById('statDone').textContent = done;
+                          document.getElementById('statErr').textContent = err;
+                          document.getElementById('statPending').textContent = pending;
+                          
+                          renderTable(realStudentData);
+                      } else {
+                          renderEmptyTable();
+                      }
+                  })
+                  .catch(err => {
+                      console.error("Lỗi lấy danh sách học viên thực tế:", err);
+                      renderEmptyTable();
+                  });
+                  
+              // Hiển thị phần tải file ZIP để người dùng download
+              document.getElementById('zipDownloadSection').style.display = 'block';
+              
               setTimeout(() => { 
-                btn.textContent = originalText; 
-                btn.disabled = false; 
-                if(btnId === 'btnRunOverwrite') {
-                  btn.style.background = 'var(--red)'; 
-                  btn.style.borderColor = 'var(--red)';
-                } else {
-                  btn.style.background = ''; 
-                  btn.style.borderColor = ''; 
-                }
+                btnOverwrite.disabled = false; 
+                btnUpdate.disabled = false; 
+                btnOverwrite.textContent = originalTextOverwrite; 
+                btnUpdate.textContent = originalTextUpdate; 
+                
+                btnOverwrite.style.background = 'var(--red)'; 
+                btnOverwrite.style.borderColor = 'var(--red)';
+                btnUpdate.style.background = ''; 
+                btnUpdate.style.borderColor = ''; 
               }, 3000);
+          } else if(data.type === 'ping') {
+              // Bỏ qua tin nhắn keep-alive ping một cách im lặng
+              console.log("SSE keep-alive ping received.");
           } else {
               processLog(data.message);
           }
       };
       currentEventSource.onerror = function() {
-          appendLog('Mất kết nối tới máy chủ (Server-Sent Events).', 'err');
+          // Nếu đã hoàn tất tiến trình, bỏ qua lỗi ngắt kết nối tự nhiên khi đóng stream
+          if (clickedBtn.textContent.includes('Hoàn tất')) {
+              currentEventSource.close();
+              return;
+          }
+          
+          sseErrorCount++;
+          if (sseErrorCount <= 5) {
+              // Tự động kết nối lại im lặng (trình duyệt tự làm), chỉ hiển thị cảnh báo nhẹ
+              appendLog('🔄 Đường truyền bận, đang tự động kết nối lại với máy chủ...', 'warn');
+              return;
+          }
+          
+          appendLog('Mất kết nối tới máy chủ (Server-Sent Events) quá lâu.', 'err');
           currentEventSource.close();
+          
+          alert("LỖI KẾT NỐI: Mất kết nối Server-Sent Events với máy chủ quá lâu. Vui lòng tải lại trang hoặc kiểm tra log trên Render!");
+          
+          // Reset lại trạng thái hoạt động của cả hai nút để người dùng chạy lại
+          btnOverwrite.disabled = false;
+          btnUpdate.disabled = false;
+          btnOverwrite.textContent = originalTextOverwrite;
+          btnUpdate.textContent = originalTextUpdate;
+          
+          btnOverwrite.style.background = 'var(--red)';
+          btnOverwrite.style.borderColor = 'var(--red)';
+          btnUpdate.style.background = '';
+          btnUpdate.style.borderColor = '';
       };
   }).catch(err => {
       appendLog('Không thể gọi API: ' + err, 'err');
-      btn.disabled = false;
-      btn.textContent = originalText;
+      alert("LỖI API: Không thể gọi đến API máy chủ: " + err);
+      
+      // Reset nút
+      btnOverwrite.disabled = false;
+      btnUpdate.disabled = false;
+      btnOverwrite.textContent = originalTextOverwrite;
+      btnUpdate.textContent = originalTextUpdate;
+      
+      btnOverwrite.style.background = 'var(--red)';
+      btnOverwrite.style.borderColor = 'var(--red)';
+      btnUpdate.style.background = '';
+      btnUpdate.style.borderColor = '';
   });
 }
 
@@ -459,8 +615,8 @@ function runUpdate() {
   runRealtime('btnRunUpdate', 'update');
 }
 
-// Init (chỉ render bảng mẫu, log đã được xóa)
-renderTable(sampleData);
+// Khởi tạo ban đầu: render bảng trống chờ chạy xong
+renderEmptyTable();
 // renderLogs(); // Xóa log mẫu
 
 </script>
