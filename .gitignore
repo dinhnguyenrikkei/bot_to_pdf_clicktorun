@@ -1,9 +1,10 @@
-﻿# Tep du lieu Excel
+# Tep du lieu Excel
 *.xlsx
 *.csv
 
 # Tep nen PDF dau ra
 *.zip
+!RikkeiBot_Deploy.zip
 
 # Thu muc tam thoi va file compiler
 _temp_all_in_one/
