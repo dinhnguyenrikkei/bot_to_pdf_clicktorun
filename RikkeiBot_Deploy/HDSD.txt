@@ -1,0 +1,49 @@
+========================================================================
+🤖 HƯỚNG DẪN SỬ DỤNG - RIKKEI BOT DASHBOARD (PHIÊN BẢN ĐÓNG GÓI EXE)
+========================================================================
+
+Phiên bản đóng gói app.exe này cho phép chạy Rikkei Bot trên bất kỳ máy tính Windows nào
+mà không cần cài đặt Python hay bất kỳ thư viện nào khác.
+
+------------------------------------------------------------------------
+📁 Cấu trúc thư mục giải nén / chạy:
+------------------------------------------------------------------------
+Để ứng dụng hoạt động chính xác, các tệp sau đây PHẢI nằm trong cùng một thư mục:
+1. app.exe              - File chạy chính.
+2. config.json          - Chứa API Lark (có thể sửa trực tiếp hoặc cấu hình trên Web).
+3. Mau_mail_CNTT.docx   - Mẫu Word trộn thư ngành CNTT.
+4. Mau_mail_QTKDS.docx  - Mẫu Word trộn thư ngành QTKD.
+
+------------------------------------------------------------------------
+⚙️ Yêu cầu hệ thống trên máy chạy:
+------------------------------------------------------------------------
+- Hệ điều hành: Windows 10 hoặc Windows 11 (64-bit).
+- Máy tính cần cài đặt phần mềm Microsoft Word (để hỗ trợ chuyển đổi DOCX sang PDF).
+- Kết nối Internet ổn định để ứng dụng kết nối tới Lark API.
+
+------------------------------------------------------------------------
+🚀 Hướng dẫn khởi chạy:
+------------------------------------------------------------------------
+Bước 1: Nháy đúp chuột vào tệp `app.exe` để chạy.
+        Một màn hình terminal đen sẽ xuất hiện và hiển thị dòng chữ:
+        "Khởi động Web Server tại http://localhost:5000"
+        (Lưu ý: Không tắt màn hình đen này khi đang sử dụng app).
+
+Bước 2: Mở trình duyệt web (Chrome, Edge, Cốc Cốc...) và truy cập địa chỉ:
+        http://localhost:5000
+
+Bước 3: Trên giao diện Web:
+        - Điền đầy đủ thông tin: App ID, App Secret, Link CRM Lark Base của bạn.
+        - Hệ thống sẽ tự động phân tích Link CRM để trích xuất App Token và Table ID.
+        - Bấm "Lưu" hoặc chạy để bot tự lưu thông tin cấu hình vào tệp `config.json`.
+        - Bấm nút "Tạo mới / Ghi đè" hoặc "Update bảng" để chạy quy trình tự động hóa.
+        - Bạn có thể xem trực tiếp kết quả chạy và dòng nhật ký (Logs) trên màn hình web.
+
+------------------------------------------------------------------------
+📝 Lưu ý quan trọng:
+------------------------------------------------------------------------
+- Bạn có thể tự do mở các file Word template `Mau_mail_CNTT.docx` và `Mau_mail_QTKDS.docx`
+  để sửa đổi nội dung thư, định dạng, font chữ... thoải mái. Chỉ cần giữ nguyên các
+  trường trộn dữ liệu như: «Họ_và_tên», «CCCD», «SĐT», «Ngày_sinh», «Địa_chỉ», «Nơi_sinh».
+- Nếu chạy ứng dụng bị lỗi "Word not found" hoặc lỗi chuyển đổi PDF, hãy đảm bảo rằng
+  Microsoft Word đã được cài đặt và cấp quyền hoạt động bình thường trên máy đó.

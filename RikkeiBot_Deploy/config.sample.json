@@ -1,0 +1,6 @@
+{
+    "APP_ID": "your_app_id_here",
+    "APP_SECRET": "your_app_secret_here",
+    "APP_TOKEN": "your_app_token_here",
+    "TABLE_ID": "your_table_id_here"
+}

@@ -1,30 +1,31 @@
-# Tệp dữ liệu Excel (Bao gồm dữ liệu thật chứa thông tin cá nhân)
+﻿# Tep du lieu Excel
 *.xlsx
 *.csv
 
-# Tệp nén PDF đầu ra
+# Tep nen PDF dau ra
 *.zip
 
-# Thư mục tạm thời sinh ra trong quá trình chạy
+# Thu muc tam thoi va file compiler
 _temp_all_in_one/
 _temp_split/
 __pycache__/
+build/
+dist/
+*.spec
 
-# Tệp PDF
+# Tep PDF
 *.pdf
 
-# Tệp Word (Sẽ bỏ qua tất cả file Word TRỪ 2 file template chuẩn)
+# Tep Word (Bo qua tat ca file Word TRU cac file template chuan)
 *.docx
 !Mau_mail_CNTT.docx
 !Mau_mail_QTKDS.docx
+!RikkeiBot_Deploy/Mau_mail_CNTT.docx
+!RikkeiBot_Deploy/Mau_mail_QTKDS.docx
 
-# Tệp hệ thống
+# Tep he thong
 .DS_Store
 
-# File c?u h�nh ch?a API Keys
+# File cau hinh chua API Keys
 config.json
-
-config.json
-*.xlsx
-*.zip
-_temp_*/
+RikkeiBot_Deploy/config.json
