@@ -18,8 +18,8 @@
 
 ```
 Bot_rikkei/
-├── auto_update_new.py       # Script chính (chỉ xử lý học viên MỚI)
-├── full_automation_lark.py  # Script full (xử lý TẤT CẢ học viên)
+├── auto_update_new_app.py   # Script chính (chỉ xử lý học viên MỚI)
+├── full_automation_lark_app.py # Script full (xử lý TẤT CẢ học viên)
 ├── config.json              # API keys Lark (không commit lên git)
 ├── config.sample.json       # File mẫu config
 ├── Mau_mail_CNTT.docx       # Template thư trúng tuyển ngành CNTT
@@ -68,10 +68,10 @@ Mở `config.json` và điền thông tin:
 
 ```bash
 # Chỉ xử lý học viên MỚI (chưa có file)
-python auto_update_new.py
+python auto_update_new_app.py
 
 # Xử lý LẠI TẤT CẢ (ghi đè file cũ)
-python full_automation_lark.py
+python full_automation_lark_app.py
 ```
 
 ### 4. Xem Dashboard

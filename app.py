@@ -76,21 +76,21 @@ def run_script(mode):
         if getattr(sys, 'frozen', False):
             log_queue.put(">>> Khởi chạy Pipeline trong luồng xử lý (Chế độ đóng gói EXE)...\n")
             if mode == 'overwrite':
-                import full_automation_lark
+                import full_automation_lark_app
                 import importlib
-                importlib.reload(full_automation_lark)
-                full_automation_lark.run_automation()
+                importlib.reload(full_automation_lark_app)
+                full_automation_lark_app.run_automation()
             elif mode == 'update':
-                import auto_update_new
+                import auto_update_new_app
                 import importlib
-                importlib.reload(auto_update_new)
-                auto_update_new.run_automation()
+                importlib.reload(auto_update_new_app)
+                auto_update_new_app.run_automation()
             else:
                 log_queue.put("LỖI: Chế độ chạy không hợp lệ.\n")
             log_queue.put("===DONE===")
         else:
             log_queue.put(">>> Khởi chạy Pipeline trong tiến trình cô lập để tối ưu RAM...\n")
-            script_name = 'full_automation_lark.py' if mode == 'overwrite' else 'auto_update_new.py'
+            script_name = 'full_automation_lark_app.py' if mode == 'overwrite' else 'auto_update_new_app.py'
             
             # Chạy tiến trình python độc lập để giải phóng RAM triệt để khi kết thúc
             import subprocess
