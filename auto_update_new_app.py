@@ -223,7 +223,7 @@ def fetch_and_clean_records(token):
             raw_cccd = parse_lark_text(fields.get('CCCD/ CMT'))
             if not raw_cccd: continue  
             
-            raw_hoten = parse_lark_text(fields.get('Họ và tên học viên'))
+            raw_hoten = parse_lark_text(fields.get('*Họ tên HV - Sau lọc'))
             raw_ngaysinh = fields.get('Ngày sinh học viên')
             raw_sdt = parse_lark_text(fields.get('SĐT học viên'))
             raw_diachi = parse_lark_text(fields.get('Địa chỉ thường trú'))

@@ -9,7 +9,9 @@ import re
 from openpyxl import Workbook
 from pathlib import Path
 import zipfile
+# pyrefly: ignore [missing-import]
 from mailmerge import MailMerge
+# pyrefly: ignore [missing-import]
 from docx2pdf import convert
 
 # Đảm bảo in tiếng Việt không lỗi trên terminal

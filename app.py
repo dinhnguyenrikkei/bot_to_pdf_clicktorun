@@ -4,6 +4,7 @@ import io
 import json
 import threading
 import queue
+# pyrefly: ignore [missing-import]
 from flask import Flask, request, render_template, Response, jsonify, send_from_directory
 
 app = Flask(__name__)
