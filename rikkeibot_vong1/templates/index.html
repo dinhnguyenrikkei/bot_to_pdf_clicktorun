@@ -174,35 +174,35 @@ tr:hover td{background:var(--surface2)}
         <input type="password" id="apiSecret" value="zBA9rmZ7ScgEtIS1OFFOedGIHaz11V8g" placeholder="Nhập App Secret..." />
       </div>
       <div class="input-group config-full">
-        <label>Base App Token</label>
-        <input type="text" id="appToken" value="UWhibaHkCaWLausconRl8krsgZg" placeholder="Nhập Base Token..." />
+        <label>Base App Token <span style="font-weight:400;color:var(--text-muted)">(tự trích từ link)</span></label>
+        <input type="text" id="appToken" value="UWhibaHkCaWLausconRl8krsgZg" placeholder="Tự động điền từ link..." readonly style="opacity:.7;cursor:not-allowed" />
       </div>
-      <div class="input-group">
-        <label>Table ID CNTT</label>
-        <input type="text" id="tableCntt" value="tblZoFTIttbvejQ7" placeholder="ID Bảng CNTT..." />
+      <div class="input-group config-full">
+        <label>🔗 Link bảng CNTT <span style="font-weight:400;color:var(--green)">(Paste URL Lark Base)</span></label>
+        <input type="text" id="urlCntt" value="https://rikkeieducation.sg.larksuite.com/base/UWhibaHkCaWLausconRl8krsgZg?table=tblZoFTIttbvejQ7&view=vewHEt0hna" placeholder="Dán link Lark Base bảng CNTT vào đây..." oninput="onUrlChange()" />
       </div>
-      <div class="input-group">
-        <label>Table ID QTKD</label>
-        <input type="text" id="tableQtkd" value="tbl4gHCX7H8eGjaA" placeholder="ID Bảng QTKD..." />
+      <div class="input-group config-full">
+        <label>🔗 Link bảng QTKD <span style="font-weight:400;color:var(--purple)">(Paste URL Lark Base)</span></label>
+        <input type="text" id="urlQtkd" value="https://rikkeieducation.sg.larksuite.com/base/UWhibaHkCaWLausconRl8krsgZg?table=tbl4gHCX7H8eGjaA&view=vewuctEM09" placeholder="Dán link Lark Base bảng QTKD vào đây..." oninput="onUrlChange()" />
       </div>
-      <div class="input-group">
-        <label>View ID CNTT</label>
-        <input type="text" id="viewCntt" value="vewHEt0hna" placeholder="ID View CNTT..." />
-      </div>
-      <div class="input-group">
-        <label>View ID QTKD</label>
-        <input type="text" id="viewQtkd" value="vewuctEM09" placeholder="ID View QTKD..." />
+      <div id="parsedInfo" style="grid-column:span 2;display:grid;grid-template-columns:1fr 1fr;gap:.75rem;margin-top:-.5rem">
+        <div style="background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-xs);padding:.6rem .9rem;font-family:var(--mono);font-size:.78rem">
+          <span style="color:var(--text-muted)">CNTT →</span> Table: <span id="dispTableCntt" style="color:var(--green)">tblZoFTIttbvejQ7</span> · View: <span id="dispViewCntt" style="color:var(--cyan)">vewHEt0hna</span>
+        </div>
+        <div style="background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-xs);padding:.6rem .9rem;font-family:var(--mono);font-size:.78rem">
+          <span style="color:var(--text-muted)">QTKD →</span> Table: <span id="dispTableQtkd" style="color:var(--green)">tbl4gHCX7H8eGjaA</span> · View: <span id="dispViewQtkd" style="color:var(--cyan)">vewuctEM09</span>
+        </div>
       </div>
     </div>
 
     <!-- Quick Links -->
     <div class="quick-links">
       <h3>Truy cập Lark Base</h3>
-      <a href="https://rikkeieducation.sg.larksuite.com/base/UWhibaHkCaWLausconRl8krsgZg?table=tblZoFTIttbvejQ7&view=vewHEt0hna" target="_blank" class="lark-link">
+      <a id="linkCntt" href="https://rikkeieducation.sg.larksuite.com/base/UWhibaHkCaWLausconRl8krsgZg?table=tblZoFTIttbvejQ7&view=vewHEt0hna" target="_blank" class="lark-link">
         <span class="icon">📊</span>
         <span>Bảng <span class="major">CNTT V1</span></span>
       </a>
-      <a href="https://rikkeieducation.sg.larksuite.com/base/UWhibaHkCaWLausconRl8krsgZg?table=tbl4gHCX7H8eGjaA&view=vewuctEM09" target="_blank" class="lark-link">
+      <a id="linkQtkd" href="https://rikkeieducation.sg.larksuite.com/base/UWhibaHkCaWLausconRl8krsgZg?table=tbl4gHCX7H8eGjaA&view=vewuctEM09" target="_blank" class="lark-link">
         <span class="icon">📈</span>
         <span>Bảng <span class="major qtkd">QTKD V1</span></span>
       </a>
@@ -431,17 +431,54 @@ function activateStep(steps, index) {
     }
 }
 
+// Parse Lark Base URL → {appToken, tableId, viewId}
+function parseLarkUrl(url) {
+  const result = {appToken: '', tableId: '', viewId: ''};
+  try {
+    // Extract app token from path: /base/XXXXX
+    const pathMatch = url.match(/\/base\/([A-Za-z0-9]+)/);
+    if (pathMatch) result.appToken = pathMatch[1];
+    // Extract table and view from query params
+    const urlObj = new URL(url);
+    result.tableId = urlObj.searchParams.get('table') || '';
+    result.viewId = urlObj.searchParams.get('view') || '';
+  } catch(e) {}
+  return result;
+}
+
+// Auto-update display when URL inputs change
+function onUrlChange() {
+  const cntt = parseLarkUrl(document.getElementById('urlCntt').value.trim());
+  const qtkd = parseLarkUrl(document.getElementById('urlQtkd').value.trim());
+  document.getElementById('dispTableCntt').textContent = cntt.tableId || '—';
+  document.getElementById('dispViewCntt').textContent = cntt.viewId || '—';
+  document.getElementById('dispTableQtkd').textContent = qtkd.tableId || '—';
+  document.getElementById('dispViewQtkd').textContent = qtkd.viewId || '—';
+  // Auto-fill App Token from first URL that has it
+  const token = cntt.appToken || qtkd.appToken;
+  if (token) document.getElementById('appToken').value = token;
+  // Update quick links
+  const urlCntt = document.getElementById('urlCntt').value.trim();
+  const urlQtkd = document.getElementById('urlQtkd').value.trim();
+  if (urlCntt) document.getElementById('linkCntt').href = urlCntt;
+  if (urlQtkd) document.getElementById('linkQtkd').href = urlQtkd;
+}
+
 function runRealtime(btnId, mode) {
   const apiId = document.getElementById('apiId').value.trim();
   const apiSecret = document.getElementById('apiSecret').value.trim();
-  const appToken = document.getElementById('appToken').value.trim();
-  const tableCntt = document.getElementById('tableCntt').value.trim();
-  const tableQtkd = document.getElementById('tableQtkd').value.trim();
-  const viewCntt = document.getElementById('viewCntt').value.trim();
-  const viewQtkd = document.getElementById('viewQtkd').value.trim();
   
-  if(!apiId || !apiSecret || !appToken || !tableCntt || !tableQtkd) {
-    alert("Vui lòng điền đầy đủ thông tin cấu hình kết nối API Lark!");
+  // Parse URLs to extract table/view IDs
+  const cntt = parseLarkUrl(document.getElementById('urlCntt').value.trim());
+  const qtkd = parseLarkUrl(document.getElementById('urlQtkd').value.trim());
+  const appToken = cntt.appToken || qtkd.appToken || document.getElementById('appToken').value.trim();
+  
+  if(!apiId || !apiSecret || !appToken) {
+    alert("Vui lòng điền App ID, App Secret và dán link Lark Base!");
+    return;
+  }
+  if(!cntt.tableId || !qtkd.tableId) {
+    alert("Không trích xuất được Table ID từ link. Vui lòng kiểm tra lại URL Lark Base!");
     return;
   }
   
@@ -449,10 +486,10 @@ function runRealtime(btnId, mode) {
     APP_ID: apiId,
     APP_SECRET: apiSecret,
     APP_TOKEN: appToken,
-    TABLE_CNTT: tableCntt,
-    TABLE_QTKD: tableQtkd,
-    VIEW_CNTT: viewCntt,
-    VIEW_QTKD: viewQtkd
+    TABLE_CNTT: cntt.tableId,
+    TABLE_QTKD: qtkd.tableId,
+    VIEW_CNTT: cntt.viewId,
+    VIEW_QTKD: qtkd.viewId
   };
   
   const btnOverwrite = document.getElementById('btnRunOverwrite');
