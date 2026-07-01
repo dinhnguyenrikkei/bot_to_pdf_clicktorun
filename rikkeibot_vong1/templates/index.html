@@ -1,0 +1,593 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Rikkei Bot Vòng 1 — Lark Automation Dashboard</title>
+<meta name="description" content="Dashboard quản lý Bot tự động hóa trộn thư tuyển sinh Vòng 1 và upload PDF lên Lark Bitable">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0a0e17;--surface:#101726;--surface2:#172237;--surface3:#1f2e4a;
+  --border:#263554;--border-glow:#3b82f615;
+  --text:#e2e8f0;--text-dim:#94a3b8;--text-muted:#64748b;
+  --accent:#2563eb;--accent-glow:#2563eb50;--accent-light:#60a5fa;
+  --green:#10b981;--green-dim:#065f46;--green-glow:#10b98130;
+  --amber:#f59e0b;--amber-dim:#78350f;--amber-glow:#f59e0b30;
+  --red:#ef4444;--red-dim:#7f1d1d;--red-glow:#ef444430;
+  --cyan:#06b6d4;--purple:#8b5cf6;
+  --radius:14px;--radius-sm:8px;--radius-xs:6px;
+  --font:'Be Vietnam Pro',system-ui,sans-serif;
+  --mono:'JetBrains Mono',monospace;
+  --shadow:0 10px 30px -10px #00000080,0 1px 3px #00000030;
+  --shadow-lg:0 20px 50px -15px #000000a0;
+}
+html{font-size:15px;scroll-behavior:smooth}
+body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden}
+body::before{content:'';position:fixed;top:0;left:0;right:0;bottom:0;background:radial-gradient(ellipse 80% 60% at 50% -20%,#2563eb0c 0%,transparent 70%),radial-gradient(ellipse 60% 40% at 85% 95%,#8b5cf608 0%,transparent 70%);pointer-events:none;z-index:0}
+
+/* Layout */
+.app{position:relative;z-index:1;max-width:1200px;margin:0 auto;padding:2.5rem 1.5rem 4rem}
+
+/* Header */
+.header{display:flex;align-items:center;justify-content:space-between;margin-bottom:2.5rem;padding-bottom:1.5rem;border-bottom:1px solid var(--border)}
+.logo{display:flex;align-items:center;gap:.85rem}
+.logo-icon{width:48px;height:48px;background:linear-gradient(135deg,var(--accent),var(--purple));border-radius:var(--radius);display:grid;place-items:center;font-size:1.6rem;box-shadow:0 0 25px var(--accent-glow)}
+.logo h1{font-size:1.6rem;font-weight:800;letter-spacing:-.03em;background:linear-gradient(135deg,#fff,var(--accent-light));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.logo p{font-size:.72rem;color:var(--text-muted);font-weight:500;letter-spacing:.05em;text-transform:uppercase;margin-top:1px}
+.header-actions{display:flex;gap:.75rem}
+.btn{display:inline-flex;align-items:center;gap:.5rem;padding:.7rem 1.4rem;border-radius:var(--radius-sm);font-family:var(--font);font-size:.85rem;font-weight:600;border:1px solid var(--border);background:var(--surface2);color:var(--text);cursor:pointer;transition:all .2s;text-decoration:none;box-shadow:var(--shadow)}
+.btn:hover{border-color:var(--accent);background:var(--surface3);box-shadow:0 0 15px var(--border-glow);transform:translateY(-1px)}
+.btn:active{transform:translateY(0)}
+.btn-primary{background:var(--accent);border-color:var(--accent);color:#fff}
+.btn-primary:hover{background:var(--accent-light);box-shadow:0 0 25px var(--accent-glow)}
+.btn-red{background:var(--red);border-color:var(--red);color:#fff}
+.btn-red:hover{background:#ff6b6b;box-shadow:0 0 25px var(--red-glow)}
+
+/* Stats Grid */
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:1.25rem;margin-bottom:2.5rem}
+.stat-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:1.5rem;position:relative;overflow:hidden;transition:all .3s;box-shadow:var(--shadow)}
+.stat-card:hover{border-color:var(--accent);transform:translateY(-3px);box-shadow:var(--shadow-lg)}
+.stat-card::after{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,var(--accent),transparent);opacity:0;transition:opacity .3s}
+.stat-card:hover::after{opacity:1}
+.stat-label{font-size:.75rem;text-transform:uppercase;letter-spacing:.07em;color:var(--text-muted);font-weight:600;margin-bottom:.6rem}
+.stat-value{font-size:2.2rem;font-weight:800;letter-spacing:-.04em;line-height:1}
+.stat-value.green{color:var(--green)}.stat-value.amber{color:var(--amber)}.stat-value.cyan{color:var(--cyan)}.stat-value.purple{color:var(--purple)}
+.stat-sub{font-size:.75rem;color:var(--text-dim);margin-top:.5rem;display:flex;align-items:center;gap:.35rem}
+.stat-dot{width:7px;height:7px;border-radius:50%;display:inline-block}
+.stat-dot.live{background:var(--green);box-shadow:0 0 10px var(--green-glow);animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+
+/* Section */
+.section{margin-bottom:2.5rem}
+.section-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:1.25rem}
+.section-title{font-size:1.1rem;font-weight:700;display:flex;align-items:center;gap:.6rem;letter-spacing:-.01em}
+.badge{font-size:.68rem;padding:.25rem .6rem;border-radius:99px;font-weight:700;text-transform:uppercase;letter-spacing:.05em}
+.badge-green{background:var(--green-dim);color:var(--green)}.badge-amber{background:var(--amber-dim);color:var(--amber)}.badge-red{background:var(--red-dim);color:var(--red)}
+
+/* API Config & Quick Links */
+.config-layout{display:grid;grid-template-columns:2fr 1fr;gap:1.5rem;margin-bottom:2.5rem}
+.api-config{display:grid;grid-template-columns:repeat(2,1fr);gap:1.25rem;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:1.5rem;box-shadow:var(--shadow)}
+.config-full{grid-column:span 2}
+.input-group{display:flex;flex-direction:column;gap:.5rem}
+.input-group label{font-size:.75rem;color:var(--text-dim);font-weight:600;text-transform:uppercase;letter-spacing:.05em}
+.input-group input{background:var(--bg);border:1px solid var(--border);color:var(--text);font-family:var(--mono);padding:.7rem 1rem;border-radius:var(--radius-sm);font-size:.85rem;outline:none;transition:all .2s}
+.input-group input:focus{border-color:var(--accent);box-shadow:0 0 10px var(--accent-glow)}
+
+.quick-links{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:1.5rem;display:flex;flex-direction:column;gap:1rem;box-shadow:var(--shadow)}
+.quick-links h3{font-size:.9rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--text-dim);border-bottom:1px solid var(--border);padding-bottom:.5rem}
+.lark-link{display:flex;align-items:center;gap:.6rem;padding:.7rem 1rem;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);text-decoration:none;color:var(--text);font-size:.85rem;font-weight:500;transition:all .2s}
+.lark-link:hover{border-color:var(--accent);background:var(--surface3);box-shadow:0 0 12px var(--border-glow);transform:translateX(3px)}
+.lark-link .icon{font-size:1.2rem}
+.lark-link .major{font-weight:700;color:var(--accent-light)}
+.lark-link .major.qtkd{color:#c084fc}
+
+/* Pipeline Flow */
+.pipeline{display:grid;grid-template-columns:repeat(5,1fr);gap:.75rem;margin-bottom:2.5rem}
+.pipe-step{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);padding:1.25rem 1rem;text-align:center;position:relative;transition:all .3s;box-shadow:var(--shadow)}
+.pipe-step.active{border-color:var(--accent);box-shadow:0 0 20px var(--border-glow)}
+.pipe-step.done{border-color:var(--green)}
+.pipe-step .icon{font-size:1.8rem;margin-bottom:.5rem}
+.pipe-step .name{font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--text-dim)}
+.pipe-step .status{font-size:.7rem;margin-top:.4rem;font-weight:600}
+.pipe-step .status.ok{color:var(--green)}.pipe-step .status.wait{color:var(--text-muted)}.pipe-step .status.run{color:var(--amber)}
+.pipe-arrow{position:absolute;right:-16px;top:50%;transform:translateY(-50%);color:var(--text-muted);font-size:.8rem;z-index:2;pointer-events:none}
+
+/* Table */
+.table-wrap{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;box-shadow:var(--shadow)}
+.table-toolbar{display:flex;align-items:center;justify-content:space-between;padding:1rem 1.5rem;border-bottom:1px solid var(--border);background:var(--surface2)}
+.search-box{display:flex;align-items:center;gap:.6rem;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);padding:.5rem 1rem;min-width:300px}
+.search-box input{background:none;border:none;color:var(--text);font-family:var(--font);font-size:.85rem;outline:none;width:100%}
+.search-box input::placeholder{color:var(--text-muted)}
+.table-container{max-height:480px;overflow-y:auto}
+table{width:100%;border-collapse:collapse}
+thead{background:var(--surface2);position:sticky;top:0;z-index:10}
+th{text-align:left;padding:.85rem 1.25rem;font-size:.75rem;text-transform:uppercase;letter-spacing:.07em;color:var(--text-muted);font-weight:700;border-bottom:1px solid var(--border);background:var(--surface2);box-shadow:inset 0 -1px 0 var(--border)}
+td{padding:.8rem 1.25rem;font-size:.85rem;border-bottom:1px solid #1c263c;vertical-align:middle}
+tr:hover td{background:var(--surface2)}
+.td-name{font-weight:600;color:#fff}
+.td-mono{font-family:var(--mono);font-size:.78rem;color:var(--text-dim)}
+.chip{display:inline-flex;align-items:center;gap:.3rem;padding:.2rem .65rem;border-radius:99px;font-size:.7rem;font-weight:700;letter-spacing:.02em;text-transform:uppercase}
+.chip-cntt{background:#1d4ed820;color:var(--accent-light);border:1px solid #1d4ed850}
+.chip-qtkd{background:#7e22ce20;color:#c084fc;border:1px solid #7e22ce50}
+.chip-ok{background:var(--green-dim);color:var(--green)}
+.chip-pending{background:var(--amber-dim);color:var(--amber)}
+.chip-err{background:var(--red-dim);color:var(--red)}
+
+/* Log Panel */
+.log-panel{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;box-shadow:var(--shadow)}
+.log-content{padding:1.25rem 1.5rem;max-height:220px;overflow-y:auto;font-family:var(--mono);font-size:.8rem;line-height:1.8;color:var(--text-dim)}
+.log-content .log-time{color:var(--text-muted);margin-right:.6rem}
+.log-content .log-ok{color:var(--green)}.log-content .log-warn{color:var(--amber)}.log-content .log-err{color:var(--red)}.log-content .log-info{color:var(--cyan)}
+
+/* Footer */
+.footer{text-align:center;padding-top:2.5rem;border-top:1px solid var(--border);margin-top:3.5rem;color:var(--text-muted);font-size:.75rem;line-height:1.5}
+.footer a{color:var(--accent-light);text-decoration:none;font-weight:500}
+.footer a:hover{text-decoration:underline}
+
+/* Responsive */
+@media(max-width:960px){.stats{grid-template-columns:repeat(2,1fr)}.pipeline{grid-template-columns:repeat(3,1fr)}.config-layout{grid-template-columns:1fr}}
+@media(max-width:640px){.stats{grid-template-columns:1fr}.pipeline{grid-template-columns:1fr}.header{flex-direction:column;gap:1.25rem;text-align:center}.header-actions{width:100%;justify-content:center;flex-wrap:wrap}.api-config{grid-template-columns:1fr}.config-full{grid-column:auto}}
+
+/* Animations */
+@keyframes fadeUp{from{opacity:0;transform:translateY(15px)}to{opacity:1;transform:translateY(0)}}
+.stat-card,.pipe-step,.table-wrap,.log-panel,.config-layout{animation:fadeUp .6s cubic-bezier(0.16, 1, 0.3, 1) both}
+.config-layout{animation-delay:.02s}
+.stat-card:nth-child(1){animation-delay:.05s}.stat-card:nth-child(2){animation-delay:.1s}
+.stat-card:nth-child(3){animation-delay:.15s}.stat-card:nth-child(4){animation-delay:.2s}
+.pipe-step:nth-child(1){animation-delay:.1s}.pipe-step:nth-child(2){animation-delay:.15s}
+.pipe-step:nth-child(3){animation-delay:.2s}.pipe-step:nth-child(4){animation-delay:.25s}.pipe-step:nth-child(5){animation-delay:.3s}
+
+/* Scrollbar */
+::-webkit-scrollbar{width:6px;height:6px}::-webkit-scrollbar-track{background:var(--surface)}::-webkit-scrollbar-thumb{background:var(--border);border-radius:99px}::-webkit-scrollbar-thumb:hover{background:var(--text-muted)}
+</style>
+</head>
+<body>
+<div class="app">
+  <!-- Header -->
+  <header class="header">
+    <div class="logo">
+      <div class="logo-icon">🤖</div>
+      <div>
+        <h1>Rikkei Bot Vòng 1</h1>
+        <p>Lark Bitable Automation · V1 CNTT & QTKD</p>
+      </div>
+    </div>
+    <div class="header-actions">
+      <button class="btn btn-red" id="btnRunOverwrite" onclick="runOverwrite()">▶ Ghi đè toàn bộ</button>
+      <button class="btn btn-primary" id="btnRunUpdate" onclick="runUpdate()">▶ Chỉ cập nhật mới</button>
+    </div>
+  </header>
+
+  <!-- Layout Config & Quick Links -->
+  <div class="config-layout">
+    <!-- API Config -->
+    <div class="api-config">
+      <div class="input-group">
+        <label>App ID (API ID)</label>
+        <input type="text" id="apiId" value="cli_aa8847bf0f79deef" placeholder="Nhập App ID..." />
+      </div>
+      <div class="input-group">
+        <label>App Secret (API Secret)</label>
+        <input type="password" id="apiSecret" value="zBA9rmZ7ScgEtIS1OFFOedGIHaz11V8g" placeholder="Nhập App Secret..." />
+      </div>
+      <div class="input-group config-full">
+        <label>Base App Token</label>
+        <input type="text" id="appToken" value="UWhibaHkCaWLausconRl8krsgZg" placeholder="Nhập Base Token..." />
+      </div>
+      <div class="input-group">
+        <label>Table ID CNTT</label>
+        <input type="text" id="tableCntt" value="tblZoFTIttbvejQ7" placeholder="ID Bảng CNTT..." />
+      </div>
+      <div class="input-group">
+        <label>Table ID QTKD</label>
+        <input type="text" id="tableQtkd" value="tbl4gHCX7H8eGjaA" placeholder="ID Bảng QTKD..." />
+      </div>
+    </div>
+
+    <!-- Quick Links -->
+    <div class="quick-links">
+      <h3>Truy cập Lark Base</h3>
+      <a href="https://rikkeieducation.sg.larksuite.com/base/UWhibaHkCaWLausconRl8krsgZg?table=tblZoFTIttbvejQ7&view=vewHEt0hna" target="_blank" class="lark-link">
+        <span class="icon">📊</span>
+        <span>Bảng <span class="major">CNTT V1</span></span>
+      </a>
+      <a href="https://rikkeieducation.sg.larksuite.com/base/UWhibaHkCaWLausconRl8krsgZg?table=tbl4gHCX7H8eGjaA&view=vewuctEM09" target="_blank" class="lark-link">
+        <span class="icon">📈</span>
+        <span>Bảng <span class="major qtkd">QTKD V1</span></span>
+      </a>
+    </div>
+  </div>
+
+  <!-- Stats -->
+  <div class="stats">
+    <div class="stat-card">
+      <div class="stat-label">Tổng học viên</div>
+      <div class="stat-value cyan" id="statTotal">0</div>
+      <div class="stat-sub"><span class="stat-dot live"></span> Kéo từ 2 bảng</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Upload thành công</div>
+      <div class="stat-value green" id="statDone">0</div>
+      <div class="stat-sub">✓ Đã lên Lark Base</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Chờ xử lý</div>
+      <div class="stat-value amber" id="statPending">0</div>
+      <div class="stat-sub">Chưa có PDF đính kèm</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Lỗi</div>
+      <div class="stat-value purple" id="statErr">0</div>
+      <div class="stat-sub">Cần kiểm tra lại</div>
+    </div>
+  </div>
+
+  <!-- Pipeline -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-title">⚡ Pipeline Tự Động Vòng 1</div>
+      <span class="badge badge-green" id="pipelineStatus">SẴN SÀNG</span>
+    </div>
+    <div class="pipeline">
+      <div class="pipe-step"><div class="icon">🔑</div><div class="name">Auth Token</div><div class="status wait">—</div><span class="pipe-arrow">→</span></div>
+      <div class="pipe-step"><div class="icon">📥</div><div class="name">Fetch & Clean</div><div class="status wait">—</div><span class="pipe-arrow">→</span></div>
+      <div class="pipe-step"><div class="icon">📝</div><div class="name">Word Replace</div><div class="status wait">—</div><span class="pipe-arrow">→</span></div>
+      <div class="pipe-step"><div class="icon">📄</div><div class="name">DOCX → PDF</div><div class="status wait">—</div><span class="pipe-arrow">→</span></div>
+      <div class="pipe-step"><div class="icon">☁️</div><div class="name">Upload Lark</div><div class="status wait">—</div></div>
+    </div>
+  </div>
+
+  <!-- ZIP Download Section -->
+  <div class="section" id="zipDownloadSection" style="display: none; animation: fadeUp .5s ease both;">
+    <div class="section-header">
+      <div class="section-title">📦 Tải file ZIP PDF dự phòng</div>
+      <span class="badge badge-green">TẢI VỀ</span>
+    </div>
+    <div style="background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius); padding: 1.5rem; display: flex; align-items: center; justify-content: space-between; gap: 1.5rem; box-shadow: var(--shadow-lg);">
+      <div style="display: flex; align-items: center; gap: 1.25rem;">
+        <div style="font-size: 2.2rem; background: var(--surface3); border-radius: var(--radius-sm); width: 62px; height: 62px; display: grid; place-items: center; border: 1px solid var(--border)">📦</div>
+        <div>
+          <h4 style="font-weight: 700; font-size: 1rem; margin-bottom: 0.25rem;">Tải xuống file nén PDF hàng loạt</h4>
+          <p style="font-size: 0.8rem; color: var(--text-dim); line-height: 1.5;">Bộ nén lưu trữ PDF riêng biệt cho từng ngành học đã được tạo thành công để bạn tải về máy tính dự phòng hoặc in ấn.</p>
+        </div>
+      </div>
+      <div style="display: flex; gap: 0.75rem; flex-shrink: 0;">
+        <a href="/api/download/PDF_TrungTuyen_CNTT.zip" class="btn btn-primary"><span class="icon">📥</span> ZIP CNTT</a>
+        <a href="/api/download/PDF_TrungTuyen_QTKD.zip" class="btn btn-primary" style="background: var(--purple); border-color: var(--purple);"><span class="icon">📥</span> ZIP QTKD</a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Table -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-title">👥 Danh Sách Học Viên Vòng 1</div>
+    </div>
+    <div class="table-wrap">
+      <div class="table-toolbar">
+        <div class="search-box">🔍 <input type="text" placeholder="Tìm theo tên, CCCD..." id="searchInput" oninput="filterTable()"></div>
+        <div style="display:flex;gap:.5rem">
+          <button class="btn" onclick="filterBy('all')">Tất cả</button>
+          <button class="btn" onclick="filterBy('pending')">Chờ xử lý</button>
+          <button class="btn" onclick="filterBy('done')">Đã xong</button>
+        </div>
+      </div>
+      <div class="table-container">
+        <table>
+          <thead><tr><th>Họ và tên</th><th>CCCD</th><th>Ngày sinh</th><th>SĐT</th><th>Ngành</th><th>Trạng thái</th></tr></thead>
+          <tbody id="tableBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Logs -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-title">📋 Nhật Ký Hoạt Động</div>
+    </div>
+    <div class="log-panel">
+      <div class="log-content" id="logContent"></div>
+    </div>
+  </div>
+
+  <footer class="footer">
+    <p>Rikkei Bot Vòng 1 v1.0 · Tự động hóa tạo thư trúng tuyển Vòng 1 & upload Lark Bitable</p>
+    <p style="margin-top:.3rem">Bộ phận Công nghệ và Đào tạo · <a href="https://github.com/bmngu/Bot_rikkei" target="_blank">Rikkei Education</a></p>
+  </footer>
+</div>
+
+<script>
+let currentFilter = 'all';
+let totalStudents = 0;
+let doneStudents = 0;
+let pendingStudents = 0;
+let errStudents = 0;
+let realStudentData = [];
+
+function renderTable(data) {
+  const tbody = document.getElementById('tableBody');
+  if (!data || data.length === 0) {
+    renderEmptyTable();
+    return;
+  }
+  tbody.innerHTML = data.map(r => `<tr data-status="${r.status}">
+    <td class="td-name">${r.name}</td>
+    <td class="td-mono">${r.cccd}</td>
+    <td>${r.dob}</td>
+    <td class="td-mono">${r.phone}</td>
+    <td><span class="chip chip-${r.major.toLowerCase()}">${r.major}</span></td>
+    <td><span class="chip chip-${r.status === 'done' ? 'ok' : r.status === 'pending' ? 'pending' : 'err'}">${r.status==='done'?'✓ Đã xong':r.status==='pending'?'⏳ Chờ':'⚠ Lỗi'}</span></td>
+  </tr>`).join('');
+}
+
+function renderEmptyTable() {
+  const tbody = document.getElementById('tableBody');
+  tbody.innerHTML = `<tr>
+    <td colspan="6" style="text-align: center; color: var(--text-muted); padding: 4rem 1rem;">
+      <div style="font-size: 2.2rem; margin-bottom: 0.5rem;">👥</div>
+      <div>Chưa có dữ liệu học viên Vòng 1. Nhấn nút khởi chạy bot ở trên để tải danh sách.</div>
+    </td>
+  </tr>`;
+}
+
+function filterTable() {
+  const q = document.getElementById('searchInput').value.toLowerCase();
+  const filtered = realStudentData.filter(r => {
+    const matchSearch = !q || r.name.toLowerCase().includes(q) || r.cccd.includes(q);
+    const matchStatus = currentFilter === 'all' || r.status === currentFilter;
+    return matchSearch && matchStatus;
+  });
+  renderTable(filtered);
+}
+
+function filterBy(f) {
+  currentFilter = f;
+  filterTable();
+}
+
+let currentEventSource = null;
+let sseErrorCount = 0;
+
+function appendLog(msg, type='info') {
+    const time = new Date().toLocaleTimeString('vi-VN', {hour12: false});
+    const logContent = document.getElementById('logContent');
+    const div = document.createElement('div');
+    const txt = document.createTextNode(msg);
+    const spanMsg = document.createElement('span');
+    spanMsg.className = `log-${type}`;
+    spanMsg.appendChild(txt);
+    div.innerHTML = `<span class="log-time">[${time}]</span>`;
+    div.appendChild(spanMsg);
+    logContent.appendChild(div);
+    logContent.scrollTop = logContent.scrollHeight;
+}
+
+function processLog(msg) {
+    let type = 'info';
+    if(msg.includes('LỖI') || msg.includes('✗')) type = 'err';
+    else if(msg.includes('⚠') || msg.includes('warn') || msg.includes('Cảnh báo')) type = 'warn';
+    else if(msg.includes('✓') || msg.includes('Thành công')) type = 'ok';
+    appendLog(msg, type);
+    
+    // Auto-update Pipeline UI
+    const steps = document.querySelectorAll('.pipe-step');
+    if(msg.includes('Đang lấy dữ liệu') || msg.includes('Fetch')) activateStep(steps, 1);
+    else if(msg.includes('Bắt đầu trộn thư') || msg.includes('Word Replace')) activateStep(steps, 2);
+    else if(msg.includes('chuyển đổi hàng loạt')) activateStep(steps, 3);
+    else if(msg.includes('Upload lên Lark')) activateStep(steps, 4);
+    else if(msg.includes('HOÀN TẤT')) activateStep(steps, 5);
+    
+    // Thống kê thời gian thực từ logs
+    const matchTotal = msg.match(/Đã lấy và chuẩn hóa thành công (\d+)/) || msg.match(/Mail Merge.*cho (\d+)/) || msg.match(/cho (\d+) học sinh/);
+    if (matchTotal) {
+        totalStudents += parseInt(matchTotal[1]);
+        pendingStudents = totalStudents;
+        document.getElementById('statTotal').textContent = totalStudents;
+        document.getElementById('statPending').textContent = pendingStudents;
+    }
+    
+    if (msg.includes('Thành công! ✓')) {
+        doneStudents++;
+        if (pendingStudents > 0) pendingStudents--;
+        document.getElementById('statDone').textContent = doneStudents;
+        document.getElementById('statPending').textContent = pendingStudents;
+    } else if (msg.includes('LỖI Cập nhật!') || msg.includes('LỖI Upload!') || msg.includes('LỖI Kết nối:') || msg.includes('Không tìm thấy file PDF!')) {
+        errStudents++;
+        if (pendingStudents > 0) pendingStudents--;
+        document.getElementById('statErr').textContent = errStudents;
+        document.getElementById('statPending').textContent = pendingStudents;
+    }
+}
+
+function activateStep(steps, index) {
+    for(let i=0; i<steps.length; i++) {
+        if(i < index) {
+            steps[i].classList.remove('active');
+            steps[i].classList.add('done');
+            steps[i].querySelector('.status').className = 'status ok';
+            steps[i].querySelector('.status').textContent = '✓ Hoàn tất';
+        } else if (i === index) {
+            steps[i].classList.add('active');
+            steps[i].classList.remove('done');
+            steps[i].querySelector('.status').className = 'status run';
+            steps[i].querySelector('.status').textContent = '⏳ Đang chạy...';
+        } else {
+            steps[i].classList.remove('active', 'done');
+            steps[i].querySelector('.status').className = 'status wait';
+            steps[i].querySelector('.status').textContent = '—';
+        }
+    }
+}
+
+function runRealtime(btnId, mode) {
+  const apiId = document.getElementById('apiId').value.trim();
+  const apiSecret = document.getElementById('apiSecret').value.trim();
+  const appToken = document.getElementById('appToken').value.trim();
+  const tableCntt = document.getElementById('tableCntt').value.trim();
+  const tableQtkd = document.getElementById('tableQtkd').value.trim();
+  
+  if(!apiId || !apiSecret || !appToken || !tableCntt || !tableQtkd) {
+    alert("Vui lòng điền đầy đủ thông tin cấu hình kết nối API Lark!");
+    return;
+  }
+  
+  const configData = {
+    APP_ID: apiId,
+    APP_SECRET: apiSecret,
+    APP_TOKEN: appToken,
+    TABLE_CNTT: tableCntt,
+    TABLE_QTKD: tableQtkd
+  };
+  
+  const btnOverwrite = document.getElementById('btnRunOverwrite');
+  const btnUpdate = document.getElementById('btnRunUpdate');
+  
+  const originalTextOverwrite = '▶ Ghi đè toàn bộ';
+  const originalTextUpdate = '▶ Chỉ cập nhật mới';
+  
+  btnOverwrite.disabled = true;
+  btnUpdate.disabled = true;
+  
+  const clickedBtn = document.getElementById(btnId);
+  clickedBtn.textContent = '⏳ Đang chạy...';
+  
+  document.getElementById('pipelineStatus').textContent = 'ĐANG CHẠY';
+  document.getElementById('pipelineStatus').className = 'badge badge-amber';
+
+  document.getElementById('logContent').innerHTML = '';
+  appendLog(`>>> Bắt đầu chuẩn bị chế độ Vòng 1: ${mode === 'overwrite' ? 'GHI ĐÈ TOÀN BỘ' : 'CẬP NHẬT MỚI'}`, 'info');
+  renderEmptyTable();
+  
+  totalStudents = 0;
+  doneStudents = 0;
+  pendingStudents = 0;
+  errStudents = 0;
+  realStudentData = [];
+  
+  document.getElementById('statTotal').textContent = '0';
+  document.getElementById('statDone').textContent = '0';
+  document.getElementById('statPending').textContent = '0';
+  document.getElementById('statErr').textContent = '0';
+  document.getElementById('zipDownloadSection').style.display = 'none';
+  
+  activateStep(document.querySelectorAll('.pipe-step'), 0);
+
+  if(currentEventSource) currentEventSource.close();
+
+  fetch('/api/run', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({config: configData, mode: mode})
+  }).then(() => {
+      sseErrorCount = 0;
+      currentEventSource = new EventSource('/api/stream');
+      currentEventSource.onmessage = function(e) {
+          sseErrorCount = 0;
+          const data = JSON.parse(e.data);
+          if(data.type === 'done') {
+              currentEventSource.close();
+              clickedBtn.textContent = '✓ Hoàn tất!';
+              clickedBtn.style.background = 'var(--green)';
+              clickedBtn.style.borderColor = 'var(--green)';
+              activateStep(document.querySelectorAll('.pipe-step'), 5);
+              
+              document.getElementById('pipelineStatus').textContent = 'HOÀN TẤT';
+              document.getElementById('pipelineStatus').className = 'badge badge-green';
+              
+              // Load thực tế học sinh
+              fetch('/api/records')
+                  .then(res => res.json())
+                  .then(records => {
+                      realStudentData = records;
+                      if (realStudentData && realStudentData.length > 0) {
+                          const total = realStudentData.length;
+                          const done = realStudentData.filter(r => r.status === 'done').length;
+                          const err = realStudentData.filter(r => r.status === 'error').length;
+                          const pending = total - done - err;
+                          
+                          document.getElementById('statTotal').textContent = total;
+                          document.getElementById('statDone').textContent = done;
+                          document.getElementById('statErr').textContent = err;
+                          document.getElementById('statPending').textContent = pending;
+                          
+                          renderTable(realStudentData);
+                      } else {
+                          renderEmptyTable();
+                      }
+                  })
+                  .catch(err => {
+                      console.error("Lỗi:", err);
+                      renderEmptyTable();
+                  });
+                  
+              document.getElementById('zipDownloadSection').style.display = 'block';
+              
+              setTimeout(() => { 
+                btnOverwrite.disabled = false; 
+                btnUpdate.disabled = false; 
+                btnOverwrite.textContent = originalTextOverwrite; 
+                btnUpdate.textContent = originalTextUpdate; 
+                
+                btnOverwrite.style.background = ''; 
+                btnOverwrite.style.borderColor = '';
+                btnUpdate.style.background = ''; 
+                btnUpdate.style.borderColor = ''; 
+              }, 3000);
+          } else if(data.type === 'ping') {
+              console.log("SSE ping.");
+          } else {
+              processLog(data.message);
+          }
+      };
+      currentEventSource.onerror = function() {
+          if (clickedBtn.textContent.includes('Hoàn tất')) {
+              currentEventSource.close();
+              return;
+          }
+          
+          sseErrorCount++;
+          if (sseErrorCount <= 5) {
+              appendLog('🔄 Đường truyền bận, đang tự động kết nối lại...', 'warn');
+              return;
+          }
+          
+          appendLog('Mất kết nối tới máy chủ quá lâu.', 'err');
+          currentEventSource.close();
+          alert("LỖI KẾT NỐI SSE!");
+          
+          btnOverwrite.disabled = false;
+          btnUpdate.disabled = false;
+          btnOverwrite.textContent = originalTextOverwrite;
+          btnUpdate.textContent = originalTextUpdate;
+          document.getElementById('pipelineStatus').textContent = 'LỖI';
+          document.getElementById('pipelineStatus').className = 'badge badge-red';
+      };
+  }).catch(err => {
+      appendLog('Lỗi gọi API: ' + err, 'err');
+      alert("LỖI API: " + err);
+      
+      btnOverwrite.disabled = false;
+      btnUpdate.disabled = false;
+      btnOverwrite.textContent = originalTextOverwrite;
+      btnUpdate.textContent = originalTextUpdate;
+  });
+}
+
+function runOverwrite() {
+  if(confirm("XÁC NHẬN: Bạn có chắc chắn muốn trộn thư lại từ đầu và GHI ĐÈ toàn bộ file PDF cũ trên Lark?")) {
+    runRealtime('btnRunOverwrite', 'overwrite');
+  }
+}
+
+function runUpdate() {
+  runRealtime('btnRunUpdate', 'update');
+}
+
+renderEmptyTable();
+</script>
+</body>
+</html>

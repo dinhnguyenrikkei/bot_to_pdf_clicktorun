@@ -23,11 +23,20 @@ dist/
 !Mau_mail_QTKDS.docx
 !RikkeiBot_Deploy/Mau_mail_CNTT.docx
 !RikkeiBot_Deploy/Mau_mail_QTKDS.docx
+!rikkeibot_vong1/template_CNTT.docx
+!rikkeibot_vong1/template_QTKD.docx
 
 # Tep he thong
 .DS_Store
 
 # File cau hinh chua API Keys
 config.json
+rikkeibot_vong1/config.json
 RikkeiBot_Deploy/config.json
 RikkeiBot_Deploy/_internal/
+processed_students.json
+rikkeibot_vong1/processed_students.json
+rikkeibot_vong1/build/
+rikkeibot_vong1/dist/
+rikkeibot_vong1_Deploy/
+rikkeibot_vong1/rikkeibot_vong1_Deploy/

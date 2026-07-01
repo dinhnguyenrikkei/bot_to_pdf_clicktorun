@@ -1,0 +1,6 @@
+requests
+openpyxl
+python-docx
+docx2pdf
+flask
+pyinstaller
