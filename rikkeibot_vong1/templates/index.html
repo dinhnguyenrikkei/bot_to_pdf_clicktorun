@@ -185,6 +185,14 @@ tr:hover td{background:var(--surface2)}
         <label>Table ID QTKD</label>
         <input type="text" id="tableQtkd" value="tbl4gHCX7H8eGjaA" placeholder="ID Bảng QTKD..." />
       </div>
+      <div class="input-group">
+        <label>View ID CNTT</label>
+        <input type="text" id="viewCntt" value="vewHEt0hna" placeholder="ID View CNTT..." />
+      </div>
+      <div class="input-group">
+        <label>View ID QTKD</label>
+        <input type="text" id="viewQtkd" value="vewuctEM09" placeholder="ID View QTKD..." />
+      </div>
     </div>
 
     <!-- Quick Links -->
@@ -429,6 +437,8 @@ function runRealtime(btnId, mode) {
   const appToken = document.getElementById('appToken').value.trim();
   const tableCntt = document.getElementById('tableCntt').value.trim();
   const tableQtkd = document.getElementById('tableQtkd').value.trim();
+  const viewCntt = document.getElementById('viewCntt').value.trim();
+  const viewQtkd = document.getElementById('viewQtkd').value.trim();
   
   if(!apiId || !apiSecret || !appToken || !tableCntt || !tableQtkd) {
     alert("Vui lòng điền đầy đủ thông tin cấu hình kết nối API Lark!");
@@ -440,7 +450,9 @@ function runRealtime(btnId, mode) {
     APP_SECRET: apiSecret,
     APP_TOKEN: appToken,
     TABLE_CNTT: tableCntt,
-    TABLE_QTKD: tableQtkd
+    TABLE_QTKD: tableQtkd,
+    VIEW_CNTT: viewCntt,
+    VIEW_QTKD: viewQtkd
   };
   
   const btnOverwrite = document.getElementById('btnRunOverwrite');

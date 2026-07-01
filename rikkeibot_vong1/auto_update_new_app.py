@@ -26,12 +26,16 @@ DEFAULT_APP_SECRET = "zBA9rmZ7ScgEtIS1OFFOedGIHaz11V8g"
 DEFAULT_APP_TOKEN = "UWhibaHkCaWLausconRl8krsgZg"
 DEFAULT_TABLE_CNTT = "tblZoFTIttbvejQ7"
 DEFAULT_TABLE_QTKD = "tbl4gHCX7H8eGjaA"
+DEFAULT_VIEW_CNTT = "vewHEt0hna"
+DEFAULT_VIEW_QTKD = "vewuctEM09"
 
 APP_ID = DEFAULT_APP_ID
 APP_SECRET = DEFAULT_APP_SECRET
 APP_TOKEN = DEFAULT_APP_TOKEN
 TABLE_CNTT = DEFAULT_TABLE_CNTT
 TABLE_QTKD = DEFAULT_TABLE_QTKD
+VIEW_CNTT = DEFAULT_VIEW_CNTT
+VIEW_QTKD = DEFAULT_VIEW_QTKD
 
 # Đọc cấu hình từ config.json nếu tồn tại (để Web UI ghi đè)
 try:
@@ -43,10 +47,12 @@ try:
             APP_TOKEN = _config.get('APP_TOKEN', DEFAULT_APP_TOKEN)
             TABLE_CNTT = _config.get('TABLE_CNTT', DEFAULT_TABLE_CNTT)
             TABLE_QTKD = _config.get('TABLE_QTKD', DEFAULT_TABLE_QTKD)
+            VIEW_CNTT = _config.get('VIEW_CNTT', DEFAULT_VIEW_CNTT)
+            VIEW_QTKD = _config.get('VIEW_QTKD', DEFAULT_VIEW_QTKD)
 except Exception as e:
     print(f"Cảnh báo đọc file config.json: {e}. Sử dụng cấu hình mặc định.")
 
-FILE_FIELD_NAME = 'File học viên'
+FILE_FIELD_NAME = 'File trúng tuyển thí sinh vòng 1'
 SKIP_EXISTING = True  # Đổi thành True để bỏ qua những người đã có file, chỉ update người mới
 
 # ==========================================
@@ -222,12 +228,16 @@ def get_file_field_name(fields, possible_names):
             return name
     return FILE_FIELD_NAME
 
-def fetch_and_clean_records(token, table_id, major_name):
+def fetch_and_clean_records(token, table_id, major_name, view_id=None):
     print(f"📥 Bảng {major_name}: Đang lấy dữ liệu thô từ Lark và TỰ ĐỘNG LÀM SẠCH...")
+    if view_id:
+        print(f"   📋 Lọc theo View ID: {view_id}")
     records = []
     url = f"https://open.larksuite.com/open-apis/bitable/v1/apps/{APP_TOKEN}/tables/{table_id}/records"
     headers = {"Authorization": f"Bearer {token}"}
     params = {"page_size": 100}
+    if view_id:
+        params["view_id"] = view_id
     
     # Định nghĩa các trường tìm kiếm linh hoạt (Self-healing)
     name_fields = ['Họ và tên học viên', '*Họ tên HV - Sau lọc', 'Họ tên học viên', 'Họ và tên', 'Họ tên']
@@ -237,7 +247,7 @@ def fetch_and_clean_records(token, table_id, major_name):
     addr_fields = ['Địa chỉ thường trú', 'Địa chỉ', 'Địa chỉ cụ thể']
     loc_fields = ['Địa Phương', 'Địa phương', 'Nơi sinh']
     email_time_fields = ['Thời gian gửi email đủ ĐK trúng tuyển', 'Thời gian email', 'Thời gian gửi email']
-    file_fields = [FILE_FIELD_NAME, 'File học viên', 'File đính kèm', 'File']
+    file_fields = [FILE_FIELD_NAME, 'File trúng tuyển thí sinh vòng 1', 'File học viên', 'File đính kèm', 'File']
 
     while True:
         res = requests.get(url, headers=headers, params=params).json()
@@ -427,8 +437,8 @@ def run_automation():
     token = get_tenant_access_token()
     
     # Lấy dữ liệu từ cả 2 bảng
-    records_cntt = fetch_and_clean_records(token, TABLE_CNTT, "CNTT")
-    records_qtkd = fetch_and_clean_records(token, TABLE_QTKD, "QTKD")
+    records_cntt = fetch_and_clean_records(token, TABLE_CNTT, "CNTT", VIEW_CNTT)
+    records_qtkd = fetch_and_clean_records(token, TABLE_QTKD, "QTKD", VIEW_QTKD)
     
     records = records_cntt + records_qtkd
     
