@@ -52,7 +52,7 @@ try:
 except Exception as e:
     print(f"Cảnh báo đọc file config.json: {e}. Sử dụng cấu hình mặc định.")
 
-FILE_FIELD_NAME = 'File trúng tuyển thí sinh vòng 1'
+FILE_FIELD_NAME = 'File trúng tuyển vòng 1'
 SKIP_EXISTING = False  # Đổi thành False để ghi đè lên toàn bộ dữ liệu cũ
 
 # ==========================================
@@ -240,14 +240,19 @@ def fetch_and_clean_records(token, table_id, major_name, view_id=None):
         params["view_id"] = view_id
     
     # Định nghĩa các trường tìm kiếm linh hoạt (Self-healing)
-    name_fields = ['Họ và tên học viên', '*Họ tên HV - Sau lọc', 'Họ tên học viên', 'Họ và tên', 'Họ tên']
-    cccd_fields = ['CCCD/ CMT', 'CCCD', 'Số CCCD', 'Số CCCD/CMND', 'CMND/CCCD']
-    dob_fields = ['Ngày sinh học viên', 'Ngày sinh', 'Ngày sinh HV']
-    phone_fields = ['SĐT học viên', 'SĐT', 'Số điện thoại', 'Điện thoại']
-    addr_fields = ['Địa chỉ thường trú', 'Địa chỉ', 'Địa chỉ cụ thể']
-    loc_fields = ['Địa Phương', 'Địa phương', 'Nơi sinh']
+    # Ưu tiên tên cột thực tế trên Lark Base trước
+    name_fields = ['Họ Và Tên', 'Họ và tên học viên', '*Họ tên HV - Sau lọc', 'Họ tên học viên', 'Họ và tên', 'Họ tên']
+    cccd_fields = ['Số CCCD', 'CCCD/ CMT', 'CCCD', 'Số CCCD/CMND', 'CMND/CCCD']
+    dob_fields = ['Ngày Sinh', 'Ngày sinh học viên', 'Ngày sinh', 'Ngày sinh HV']
+    phone_fields = ['*Số Điện Thoại', 'SĐT học viên', 'SĐT', 'Số điện thoại', 'Điện thoại']
+    # Địa chỉ: ưu tiên ghép từ các trường (TT) nếu có
+    addr_street_fields = ['(TT)Địa Chỉ Nhà', 'Địa chỉ thường trú', 'Địa chỉ', 'Địa chỉ cụ thể']
+    addr_ward_fields = ['(TT)Phường Xã']
+    addr_district_fields = ['(TT)Quận Huyện']
+    addr_city_fields = ['(TT)Thành Phố']
+    loc_fields = ['(HK)Thành Phố', 'Địa Phương', 'Địa phương', 'Nơi sinh']
     email_time_fields = ['Thời gian gửi email đủ ĐK trúng tuyển', 'Thời gian email', 'Thời gian gửi email']
-    file_fields = [FILE_FIELD_NAME, 'File trúng tuyển thí sinh vòng 1', 'File học viên', 'File đính kèm', 'File']
+    file_fields = [FILE_FIELD_NAME, 'File trúng tuyển vòng 1', 'File trúng tuyển thí sinh vòng 1', 'File học viên', 'File đính kèm', 'File']
 
     while True:
         res = requests.get(url, headers=headers, params=params).json()
@@ -274,7 +279,19 @@ def fetch_and_clean_records(token, table_id, major_name, view_id=None):
                     break
             
             raw_sdt = get_field_value(fields, phone_fields)
-            raw_diachi = get_field_value(fields, addr_fields)
+            
+            # Ghép địa chỉ từ các trường (TT) riêng biệt
+            raw_street = get_field_value(fields, addr_street_fields)
+            raw_ward = get_field_value(fields, addr_ward_fields)
+            raw_district = get_field_value(fields, addr_district_fields)
+            raw_city = get_field_value(fields, addr_city_fields)
+            
+            # Nếu có các trường (TT) riêng, ghép lại thành địa chỉ đầy đủ
+            if raw_street or raw_ward or raw_district or raw_city:
+                addr_parts = [p for p in [raw_street, raw_ward, raw_district, raw_city] if p and p.strip() and p.strip() != 'N.A']
+                raw_diachi = ', '.join(addr_parts)
+            else:
+                raw_diachi = ''
             
             file_col_name = get_file_field_name(fields, file_fields)
             da_co_file = bool(fields.get(file_col_name))
