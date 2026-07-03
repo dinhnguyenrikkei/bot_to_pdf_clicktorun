@@ -33,9 +33,11 @@ def build():
         "--add-data=templates;templates",
         "--add-data=template_CNTT.docx;.",
         "--add-data=template_QTKD.docx;.",
-        "--hidden-import=full_automation_lark_app",
-        "--hidden-import=auto_update_new_app",
-        "app.py"
+        "--hidden-import=full_automation_lark_app_v1",
+        "--hidden-import=auto_update_new_app_v1",
+        "--version-file=version_info.txt",
+        "--noupx",
+        "app_v1.py"
     ]
     
     print(f"-> Dang chay lenh: {' '.join(cmd)}")
@@ -54,7 +56,11 @@ def build():
     print(f"-> Chuon bi thu muc Deploy: {deploy_dir}")
     
     # Copy từ dist/app sang rikkeibot_vong1_Deploy
-    shutil.copytree("dist/app", deploy_dir)
+    shutil.copytree("dist/app", deploy_dir, dirs_exist_ok=True)
+    
+    # Copy template ra ngoài thư mục Deploy để user có thể dễ dàng sửa đổi
+    shutil.copy("template_CNTT.docx", deploy_dir)
+    shutil.copy("template_QTKD.docx", deploy_dir)
     
     # Tạo sẵn file config.json mẫu
     config_sample = {

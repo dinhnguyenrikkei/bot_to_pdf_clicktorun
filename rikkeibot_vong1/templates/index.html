@@ -390,7 +390,7 @@ function processLog(msg) {
     else if(msg.includes('HOÀN TẤT')) activateStep(steps, 5);
     
     // Thống kê thời gian thực từ logs
-    const matchTotal = msg.match(/Đã lấy và chuẩn hóa thành công (\d+)/) || msg.match(/Mail Merge.*cho (\d+)/) || msg.match(/cho (\d+) học sinh/);
+    const matchTotal = msg.match(/Đã lấy và chuẩn hóa thành công (\d+)/);
     if (matchTotal) {
         totalStudents += parseInt(matchTotal[1]);
         pendingStudents = totalStudents;

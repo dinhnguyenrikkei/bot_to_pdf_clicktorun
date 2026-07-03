@@ -76,21 +76,21 @@ def run_script(mode):
         if getattr(sys, 'frozen', False):
             log_queue.put(">>> Khởi chạy Pipeline trong luồng xử lý (Chế độ đóng gói EXE)...\n")
             if mode == 'overwrite':
-                import full_automation_lark_app
+                import full_automation_lark_app_v1
                 import importlib
-                importlib.reload(full_automation_lark_app)
-                full_automation_lark_app.run_automation()
+                importlib.reload(full_automation_lark_app_v1)
+                full_automation_lark_app_v1.run_automation()
             elif mode == 'update':
-                import auto_update_new_app
+                import auto_update_new_app_v1
                 import importlib
-                importlib.reload(auto_update_new_app)
-                auto_update_new_app.run_automation()
+                importlib.reload(auto_update_new_app_v1)
+                auto_update_new_app_v1.run_automation()
             else:
                 log_queue.put("LỖI: Chế độ chạy không hợp lệ.\n")
             log_queue.put("===DONE===")
         else:
             log_queue.put(">>> Khởi chạy Pipeline trong tiến trình cô lập để tối ưu RAM...\n")
-            script_name = 'full_automation_lark_app.py' if mode == 'overwrite' else 'auto_update_new_app.py'
+            script_name = 'full_automation_lark_app_v1.py' if mode == 'overwrite' else 'auto_update_new_app_v1.py'
             
             # Đảm bảo đường dẫn chạy chính xác cho script con
             base_dir = os.path.dirname(os.path.abspath(__file__))
@@ -198,5 +198,5 @@ def stream():
 
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 5000))
-    print(f"Khởi động Web Server tại http://0.0.0.0:{port}")
-    app.run(debug=True, host='0.0.0.0', port=port, threaded=True, use_reloader=False)
+    print(f"Khởi động Web Server tại http://127.0.0.1:{port}")
+    app.run(debug=False, host='127.0.0.1', port=port, threaded=True, use_reloader=False)

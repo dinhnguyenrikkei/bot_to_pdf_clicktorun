@@ -7,6 +7,7 @@ import requests
 import datetime
 import re
 from openpyxl import Workbook
+from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
 from pathlib import Path
 import zipfile
 import docx
@@ -106,6 +107,59 @@ def normalize_abbrev(text):
         text = pattern.sub(replacement, text)
     return text
 
+def parse_segment(text):
+    text = text.strip()
+    text_lower = text.lower()
+    
+    prefixes = ["thành phố", "thị xã", "thị trấn", "quận", "huyện", "phường", "xã", "tỉnh"]
+    for p in prefixes:
+        if text_lower.startswith(p + " "):
+            return p, text[len(p):].strip()
+            
+    return None, text
+
+def is_duplicate_field(part, field_val):
+    if not field_val or not field_val.strip():
+        return False
+        
+    part_clean = part.strip().lower()
+    field_clean = field_val.strip().lower()
+    
+    if part_clean == field_clean:
+        return True
+        
+    part_norm = normalize_abbrev(part_clean)
+    field_norm = normalize_abbrev(field_clean)
+    if part_norm == field_norm:
+        return True
+        
+    p_part, s_part = parse_segment(part_norm)
+    p_field, s_field = parse_segment(field_norm)
+    
+    if s_part.lower() == s_field.lower():
+        if p_part == p_field or p_part is None or p_field is None:
+            return True
+            
+    return False
+
+def clean_street_address(raw_street, raw_ward, raw_district, raw_city):
+    if not raw_street:
+        return ""
+        
+    parts = [p.strip() for p in raw_street.split(',') if p.strip()]
+    cleaned_parts = []
+    
+    for part in parts:
+        is_dup = False
+        for field in [raw_ward, raw_district, raw_city]:
+            if field and is_duplicate_field(part, field):
+                is_dup = True
+                break
+        if not is_dup:
+            cleaned_parts.append(part)
+            
+    return ", ".join(cleaned_parts)
+
 def clean_ten(val):
     if not val: return ''
     s = re.sub(r'\s+', ' ', re.sub(r'\d+', '', str(val))).strip()
@@ -146,6 +200,109 @@ def clean_ngaysinh_val(val):
     except Exception:
         return str(val)
 
+def normalize_vietnamese_tones(text):
+    tone_map = {
+        'oà': 'òa', 'oá': 'óa', 'oả': 'ỏa', 'oã': 'oã', 'oạ': 'ọa',
+        'uý': 'úy', 'uỳ': 'ùy', 'uỷ': 'ủy', 'uỹ': 'uỹ', 'uỵ': 'ụy',
+        'oè': 'òe', 'oé': 'óe', 'oẻ': 'ỏe', 'oẽ': 'õe', 'oẹ': 'ọe',
+        'uế': 'uế',
+    }
+    for k, v in tone_map.items():
+        text = text.replace(k, v)
+    return text
+
+def remove_vietnamese_accents(text):
+    text = text.lower()
+    accent_map = {
+        'a': 'àáảãạăằắẳẵặâầấẩẫậ',
+        'd': 'đ',
+        'e': 'èéẻẽẹêềếểễệ',
+        'i': 'ìíỉĩị',
+        'o': 'òóỏõọôồốổỗộơờớởỡợ',
+        'u': 'ùúủũụưừứửữự',
+        'y': 'ỳýỷỹỵ',
+    }
+    for char, accented in accent_map.items():
+        for acc in accented:
+            text = text.replace(acc, char)
+    return text
+
+def make_accent_insensitive_regex(text):
+    char_map = {
+        'a': '[aàáảãạăằắẳẵặâầấẩẫậ]',
+        'd': '[dđ]',
+        'e': '[eèéẻẽẹêềếểễệ]',
+        'i': '[iìíỉĩị]',
+        'o': '[oòóỏõọôồốổỗộơờớởỡợ]',
+        'u': '[uùúủũụưừứửữự]',
+        'y': '[yỳýỷỹỵ]',
+    }
+    text = text.lower()
+    text = remove_vietnamese_accents(text)
+    res = []
+    for char in text:
+        if char in char_map:
+            res.append(char_map[char])
+        elif char.isspace():
+            res.append(r'\s*')
+        else:
+            res.append(re.escape(char))
+    return "".join(res)
+
+def normalize_for_comparison(text):
+    if not text:
+        return ""
+    text = text.lower()
+    text = normalize_vietnamese_tones(text)
+    text = normalize_abbrev(text)
+    text = re.sub(r'\s+', ' ', text).strip()
+    text = text.strip('.,;!-– ')
+    return text
+
+def remove_target_from_text(text, target):
+    t_norm = normalize_for_comparison(target)
+    if not t_norm or len(t_norm) < 3:
+        return text
+        
+    _, core = parse_segment(t_norm)
+    core = core.strip()
+    
+    core_regex = make_accent_insensitive_regex(core)
+    prefix_regex = r'(?:tỉnh|thành\s+phố|tp\.?|thị\s+xã|tx\.?|huyện|h\.?|quận|q\.?|thị\s+trấn|tt\.?|phường|p\.?|xã|x\.?|thôn|xóm|ấp|làng|bản)?'
+    
+    full_pattern = r'\b' + prefix_regex + r'\s*[\.\-–/]?\s*' + core_regex + r'\b'
+    
+    new_text, count = re.subn(full_pattern, '', text, flags=re.IGNORECASE)
+    
+    new_text = re.sub(r',\s*,', ',', new_text)
+    new_text = re.sub(r'/\s*/', '/', new_text)
+    new_text = re.sub(r'-\s*-', '-', new_text)
+    new_text = re.sub(r'–\s*–', '–', new_text)
+    new_text = re.sub(r'^\s*[\.,\-–/\s]+|[\.,\-–/\s]+$', '', new_text)
+    new_text = re.sub(r'\s+', ' ', new_text).strip()
+    
+    return new_text
+
+def deduplicate_address_parts(parts):
+    cleaned = [p.strip() for p in parts if p.strip()]
+    for i in range(len(cleaned)):
+        for j in range(len(cleaned) - 1, i, -1):
+            p_i = cleaned[i]
+            p_j = cleaned[j]
+            if not p_i or not p_j:
+                continue
+                
+            p_i_norm = normalize_for_comparison(p_i)
+            p_j_norm = normalize_for_comparison(p_j)
+            
+            if p_i_norm == p_j_norm:
+                cleaned[i] = ""
+                continue
+                
+            cleaned[i] = remove_target_from_text(p_i, p_j)
+            
+    return [p for p in cleaned if p.strip()]
+
 def clean_diachi(addr):
     if not addr: return ''
     s = str(addr)
@@ -156,6 +313,8 @@ def clean_diachi(addr):
     s = s.rstrip('.,;!:')
 
     parts = [normalize_abbrev(p.strip()) for p in s.split(',')]
+    parts = deduplicate_address_parts(parts)
+    
     new_parts = []
     for part in parts:
         part = part.strip().rstrip('.,;!:')
@@ -174,8 +333,16 @@ def clean_diachi(addr):
         else:
             new_parts.append(' '.join(title_viet(w) for w in part.split()))
 
-    if not new_parts: return ''
-    return ', '.join(new_parts) + '.'
+    final_parts = []
+    for p_val in new_parts:
+        p_val_clean = p_val.strip()
+        if p_val_clean in ['Hồ Chí Minh', 'Thành Phố Hồ Chí Minh', 'Thành phố Hồ Chí Minh', 'Tp. Hồ Chí Minh', 'Tp.Hồ Chí Minh', 'Tp HCM', 'Tp.HCM']:
+            final_parts.append('TP.Hồ Chí Minh')
+        else:
+            final_parts.append(p_val)
+
+    if not final_parts: return ''
+    return ', '.join(final_parts) + '.'
 
 def extract_diaphuong(cleaned_addr):
     if not cleaned_addr: return ''
@@ -190,15 +357,22 @@ def extract_diaphuong(cleaned_addr):
             break
 
     result = ' '.join(w[0].upper() + w[1:] if w else w for w in last_part.split())
-    if result.lower() in _PROV_LOWER: return _PROV_LOWER[result.lower()]
+    
+    def normalize_hcm(val):
+        if val in ['Hồ Chí Minh', 'TP. Hồ Chí Minh', 'TPHCM', 'TP.HCM', 'Thành phố Hồ Chí Minh', 'Thành Phố Hồ Chí Minh']:
+            return 'TP.Hồ Chí Minh'
+        return val
+
+    if result.lower() in _PROV_LOWER: 
+        return normalize_hcm(_PROV_LOWER[result.lower()])
 
     words = s.split()
     for n in [3, 2, 1]:
         if len(words) >= n:
             candidate = ' '.join(words[-n:])
             if candidate.lower() in _PROV_LOWER:
-                return _PROV_LOWER[candidate.lower()]
-    return result
+                return normalize_hcm(_PROV_LOWER[candidate.lower()])
+    return normalize_hcm(result)
 
 # ==========================================
 # 3. KẾT NỐI API LARK
@@ -250,7 +424,7 @@ def fetch_and_clean_records(token, table_id, major_name, view_id=None):
     addr_ward_fields = ['(TT)Phường Xã']
     addr_district_fields = ['(TT)Quận Huyện']
     addr_city_fields = ['(TT)Thành Phố']
-    loc_fields = ['(HK)Thành Phố', 'Địa Phương', 'Địa phương', 'Nơi sinh']
+    loc_fields = ['(TT)Thành Phố', '(HK)Thành Phố', 'Địa Phương', 'Địa phương', 'Nơi sinh']
     email_time_fields = ['Thời gian gửi email đủ ĐK trúng tuyển', 'Thời gian email', 'Thời gian gửi email']
     file_fields = [FILE_FIELD_NAME, 'File trúng tuyển vòng 1', 'File trúng tuyển thí sinh vòng 1', 'File học viên', 'File đính kèm', 'File']
 
@@ -286,9 +460,12 @@ def fetch_and_clean_records(token, table_id, major_name, view_id=None):
             raw_district = get_field_value(fields, addr_district_fields)
             raw_city = get_field_value(fields, addr_city_fields)
             
+            # Lọc sạch địa chỉ cụ thể khỏi các phần trùng lặp với Ward, District, City
+            clean_street = clean_street_address(raw_street, raw_ward, raw_district, raw_city)
+            
             # Nếu có các trường (TT) riêng, ghép lại thành địa chỉ đầy đủ
-            if raw_street or raw_ward or raw_district or raw_city:
-                addr_parts = [p for p in [raw_street, raw_ward, raw_district, raw_city] if p and p.strip() and p.strip() != 'N.A']
+            if clean_street or raw_ward or raw_district or raw_city:
+                addr_parts = [p for p in [clean_street, raw_ward, raw_district, raw_city] if p and p.strip() and p.strip() != 'N.A']
                 raw_diachi = ', '.join(addr_parts)
             else:
                 raw_diachi = ''
@@ -305,7 +482,7 @@ def fetch_and_clean_records(token, table_id, major_name, view_id=None):
             
             # Trích xuất địa phương/nơi sinh
             raw_diaphuong = get_field_value(fields, loc_fields)
-            noi_sinh = raw_diaphuong if raw_diaphuong else extract_diaphuong(clean_diachi_val)
+            noi_sinh = extract_diaphuong(raw_diaphuong) if raw_diaphuong else extract_diaphuong(clean_diachi_val)
             
             raw_thoigian = get_field_value(fields, email_time_fields)
             
@@ -368,14 +545,37 @@ def create_excel_backup(records, filename_prefix):
         headers = ['Họ và tên', 'CCCD', 'Ngày sinh', 'Nơi sinh', 'Địa chỉ', 'SĐT', 'Ngành', 'Thời gian email', 'Đã có file']
         ws.append(headers)
         
+        # Style định dạng bảng đẹp
+        header_font = Font(bold=True, color="FFFFFF")
+        header_fill = PatternFill("solid", fgColor="4F81BD")
+        center_align = Alignment(horizontal="center", vertical="center", wrap_text=True)
+        left_align = Alignment(horizontal="left", vertical="center", wrap_text=True)
+        thin_border = Border(left=Side(style='thin'), right=Side(style='thin'), top=Side(style='thin'), bottom=Side(style='thin'))
+
+        # Format Headers
+        for cell in ws[1]:
+            cell.font = header_font
+            cell.fill = header_fill
+            cell.alignment = center_align
+            cell.border = thin_border
+        
         for rec in group_records:
             row = [rec.get(h, '') for h in headers]
             ws.append(row)
             
-        # Định dạng cột text cho CCCD và SĐT để tránh mất số 0
+        # Format dữ liệu và định dạng text cho CCCD/SĐT
         for row in range(2, len(group_records) + 2):
             ws.cell(row=row, column=2).number_format = '@' # Cột CCCD (cột B)
             ws.cell(row=row, column=6).number_format = '@' # Cột SĐT (cột F)
+            for col in range(1, len(headers) + 1):
+                c = ws.cell(row=row, column=col)
+                c.border = thin_border
+                c.alignment = center_align if col in [2, 3, 6, 7, 8, 9] else left_align
+                
+        # Tự động chỉnh độ rộng cột
+        column_widths = [25, 15, 12, 18, 45, 13, 10, 20, 12]
+        for i, width in enumerate(column_widths, 1):
+            ws.column_dimensions[chr(64+i)].width = width
             
         wb.save(file_name)
         print(f"-> Đã lưu file {file_name} ({len(group_records)} dòng)")
@@ -415,36 +615,91 @@ def update_bitable_record(token, table_id, record_id, file_field_name, file_toke
 def fill_student_info(template_path, student_data, output_path):
     doc = docx.Document(template_path)
     
-    # Paragraph thứ 9 thường chứa thông tin học sinh
-    p = doc.paragraphs[9]
-    
-    if len(p.runs) >= 31:
-        # Thay thế chuẩn theo cấu trúc run
-        p.runs[1].text = student_data['Họ và tên']
-        p.runs[7].text = student_data['CCCD'] + " "
-        p.runs[12].text = student_data['Nơi sinh']
-        p.runs[13].text = ""
-        p.runs[14].text = ""
-        p.runs[20].text = student_data['Ngày sinh']
-        p.runs[28].text = student_data['SĐT'] + " "
-        p.runs[30].text = student_data['Địa chỉ']
-    else:
-        # Fallback thay thế chuỗi trực tiếp
-        text = p.text
-        text = text.replace("Nguyễn Phước Nghĩa", student_data['Họ và tên'])
-        text = text.replace("Bùi Hà Phương", student_data['Họ và tên'])
-        text = text.replace("049208001118", student_data['CCCD'])
-        text = text.replace("034308004046", student_data['CCCD'])
-        text = text.replace("Bình Định", student_data['Nơi sinh'])
-        text = text.replace("Thái Bình", student_data['Nơi sinh'])
-        text = text.replace("13/06/2008", student_data['Ngày sinh'])
-        text = text.replace("02/02/2008", student_data['Ngày sinh'])
-        text = text.replace("0797982118", student_data['SĐT'])
-        text = text.replace("0344637351", student_data['SĐT'])
-        text = text.replace("28 Đinh Núp, Tổ 5, Phường Kon Tum, Quảng Ngãi.", student_data['Địa chỉ'])
-        text = text.replace("Xóm 3, Thôn Mỹ Bổng, Xã Vạn Xuân, Tỉnh Hưng Yên.", student_data['Địa chỉ'])
-        p.text = text
+    for p in doc.paragraphs:
+        runs = p.runs
+        found = False
         
+        # 3 runs check
+        for idx in range(len(runs) - 2):
+            combined = (runs[idx].text + runs[idx+1].text + runs[idx+2].text).replace(' ', '').lower()
+            if combined == "bìnhđịnh" or combined == "tháibình":
+                runs[idx].text = student_data['Nơi sinh']
+                runs[idx].bold = True
+                runs[idx].italic = True
+                runs[idx+1].text = ""
+                runs[idx+2].text = ""
+                found = True
+                break
+                
+        # 2 runs check
+        if not found:
+            for idx in range(len(runs) - 1):
+                combined = (runs[idx].text + runs[idx+1].text).replace(' ', '').lower()
+                if combined == "bìnhđịnh" or combined == "tháibình":
+                    runs[idx].text = student_data['Nơi sinh']
+                    runs[idx].bold = True
+                    runs[idx].italic = True
+                    runs[idx+1].text = ""
+                    found = True
+                    break
+                    
+        # 1 run check
+        if not found:
+            for idx in range(len(runs)):
+                val = runs[idx].text.strip()
+                if val == "Bình Định" or val == "Thái Bình":
+                    runs[idx].text = student_data['Nơi sinh']
+                    runs[idx].bold = True
+                    runs[idx].italic = True
+                    break
+                    
+        # Other replacements
+        for r in runs:
+            if "Nguyễn Phước Nghĩa" in r.text:
+                r.text = r.text.replace("Nguyễn Phước Nghĩa", student_data['Họ và tên'])
+                r.bold = True
+            elif "Bùi Hà Phương" in r.text:
+                r.text = r.text.replace("Bùi Hà Phương", student_data['Họ và tên'])
+                r.bold = True
+            elif "049208001118" in r.text:
+                r.text = r.text.replace("049208001118", student_data['CCCD'])
+                r.bold = True
+                r.italic = True
+            elif "034308004046" in r.text:
+                r.text = r.text.replace("034308004046", student_data['CCCD'])
+                r.bold = True
+                r.italic = True
+            elif "13/06/2008" in r.text:
+                r.text = r.text.replace("13/06/2008", student_data['Ngày sinh'])
+                r.bold = True
+                r.italic = True
+            elif "02/02/2008" in r.text:
+                r.text = r.text.replace("02/02/2008", student_data['Ngày sinh'])
+                r.bold = True
+                r.italic = True
+            elif "0797982118" in r.text:
+                r.text = r.text.replace("0797982118", student_data['SĐT'])
+                r.bold = True
+                r.italic = True
+            elif "0344637351" in r.text:
+                r.text = r.text.replace("0344637351", student_data['SĐT'])
+                r.bold = True
+                r.italic = True
+            elif "28 Đinh Núp, Tổ 5, Phường Kon Tum, Quảng Ngãi." in r.text:
+                r.text = " " + student_data['Địa chỉ'].strip()
+                r.bold = True
+                r.italic = True
+            elif "Xóm 3, Thôn Mỹ Bổng, Xã Vạn Xuân, Tỉnh Hưng Yên." in r.text:
+                r.text = " " + student_data['Địa chỉ'].strip()
+                r.bold = True
+                r.italic = True
+                
+        # Squeeze whitespace for Birthplace paragraph to prevent line wrapping
+        if "Nơi sinh:" in p.text and ("Số điện thoại:" in p.text or "SĐT" in p.text):
+            for r in runs:
+                if r.text.strip() == "" and " " in r.text and len(r.text) > 1:
+                    r.text = " "
+                    
     doc.save(output_path)
 
 # ==========================================
@@ -458,6 +713,18 @@ def run_automation():
     records_qtkd = fetch_and_clean_records(token, TABLE_QTKD, "QTKD", VIEW_QTKD)
     
     records = records_cntt + records_qtkd
+    
+    # Deduplicate records by CCCD to keep one unique record per student
+    seen_cccd = set()
+    unique_records = []
+    for r in records:
+        cccd = r.get('CCCD')
+        if cccd not in seen_cccd:
+            seen_cccd.add(cccd)
+            unique_records.append(r)
+        else:
+            print(f" -> Phát hiện bản ghi trùng lặp CCCD ({cccd}): Bỏ qua bản ghi của {r['Họ và tên']}")
+    records = unique_records
     
     if not records:
         print("Không có dữ liệu hợp lệ để xử lý.")
